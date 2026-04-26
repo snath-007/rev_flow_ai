@@ -1,399 +1,426 @@
-# 📦 RevFlow — Mini Revenue Automation Engine
+# RevFlow - AI Revenue Automation Workbench
 
-A **billing + metering + revenue recognition system** with an AI-powered contract parser.
+RevFlow is a portfolio-grade proof of concept for a modern B2B SaaS revenue automation platform.
 
-RevFlow simulates a modern SaaS revenue stack:
+It models the core workflows behind products like flexible billing, usage metering, AI-assisted contract ingestion, invoice generation, and revenue recognition. The goal is not to clone any single company, but to build a credible end-to-end system that demonstrates full-stack product engineering depth in a complex finance domain.
 
-* Contract-driven billing
-* Usage-based metering
-* Invoice generation
-* Revenue recognition (ASC 606-lite)
+## Product Thesis
 
----
+Modern SaaS companies increasingly sell through custom contracts:
 
-# 🧭 High-Level Architecture
+- Usage-based pricing
+- Seat-based pricing
+- Minimum commitments
+- Prepaid credits
+- Free units and overages
+- Tiered and volume pricing
+- Custom payment terms
+- Mid-term amendments
+- Revenue recognition requirements
+
+The hard problem is not just calculating a price. The hard problem is helping finance, sales, product, and engineering teams turn messy commercial agreements into correct, auditable, operational billing workflows without constant developer intervention.
+
+RevFlow is designed around that problem.
+
+## Core User Journey
+
+```txt
+Contract terms
+  -> AI extraction
+  -> Human review and approval
+  -> Billing configuration
+  -> Usage ingestion and aggregation
+  -> Draft invoice generation
+  -> Invoice approval and issue
+  -> Revenue schedule and journal entries
+  -> Audit trail and operational visibility
+```
+
+## What The System Demonstrates
+
+- End-to-end ownership from data model to user interface
+- Complex enterprise configuration UI design
+- Type-safe full-stack architecture
+- Event-driven usage metering
+- Idempotent ingestion and background processing
+- Pricing engine design with pluggable strategies
+- Invoice lifecycle state management
+- Simplified ASC 606-style revenue recognition
+- AI-assisted workflows with human approval
+- Auditability for finance-grade operations
+
+## High-Level Architecture
+
+```txt
+                       +------------------+
+                       |   Web App        |
+                       |   Next.js        |
+                       +---------+--------+
+                                 |
+                                 v
+                       +------------------+
+                       |   API Server     |
+                       |   Express + TS   |
+                       +----+--------+----+
+                            |        |
+                            v        v
+                    +----------+   +--------------+
+                    | Postgres |   | Redis/BullMQ |
+                    +----+-----+   +------+-------+
+                         ^                |
+                         |                v
+                         |        +---------------+
+                         +--------+ Worker        |
+                                  | Node + BullMQ |
+                                  +---------------+
+
+AI provider is called by the API during contract extraction and review workflows.
+```
 
 ## Core Components
 
-* **Web App (Next.js 14)**
-  Dashboard UI for contracts, invoices, analytics
+### Web App
 
-* **API Server (Express + TypeScript)**
-  Central business logic layer
+Next.js dashboard for the finance/operator workflow:
 
-* **Worker (Node + BullMQ)**
-  Async processing for usage aggregation, invoicing, revrec
+- Contract intake
+- AI extraction review
+- Pricing and meter configuration
+- Usage event visibility
+- Invoice preview and approval
+- Revenue schedule review
+- Audit log inspection
+- Operational dashboards
 
-* **PostgreSQL**
-  Source of truth (contracts, invoices, revenue data)
+The frontend should be product-quality, not a thin demo shell. This is where the project shows senior full-stack judgment: information architecture, state handling, dense enterprise workflows, validation feedback, and clear affordances.
 
-* **Redis + BullMQ**
-  Queue + background job orchestration
+### API Server
 
-* **AI Layer (Claude/OpenAI)**
-  Contract → structured billing config
+Express + TypeScript backend that owns all domain behavior:
 
-  <img width="1440" height="1240" alt="image" src="https://github.com/user-attachments/assets/a0adfe31-1ea5-494d-ab96-b89e27849d92" />
+- Contract lifecycle
+- Product catalog and plan configuration
+- Meter definitions
+- Pricing calculations
+- Usage ingestion
+- Invoice generation
+- Revenue recognition
+- Audit logging
+- AI extraction orchestration
 
+Routes stay thin. Services own business rules. Database access is explicit and testable.
 
----
+### Worker
 
-## 🔁 Data Flow
+Long-running Node process for asynchronous work:
 
-```
-User → Web → API → DB
-                ↓
-              Redis Queue → Worker → DB
-```
+- Usage aggregation
+- Invoice generation jobs
+- Revenue recognition scheduling
+- Retryable failed jobs
+- Future email and integration jobs
 
----
+### PostgreSQL
 
-# 🏗️ Monorepo Structure
+Source of truth for customers, contracts, catalog configuration, meters, usage, invoices, revenue schedules, journal entries, and audit logs.
 
-```
+### Redis + BullMQ
+
+Queue infrastructure for buffering work, absorbing spikes, retrying failed jobs, and decoupling user-facing API latency from background processing.
+
+### AI Layer
+
+AI extracts structured billing and revenue terms from pasted/uploaded contract text.
+
+The AI does not directly activate billing. It produces a draft configuration that must be reviewed, corrected, and approved by a human user.
+
+## Monorepo Structure
+
+```txt
 revflow/
-├── apps/
-│   ├── web/                         ← Next.js 14 (port 3000)
-│   │   ├── app/
-│   │   │   ├── (dashboard)/
-│   │   │   │   ├── contracts/
-│   │   │   │   ├── invoices/
-│   │   │   │   ├── customers/
-│   │   │   │   └── analytics/
-│   │   │   └── layout.tsx
-│   │   ├── components/
-│   │   │   ├── ui/                  ← shadcn primitives
-│   │   │   └── domain/              ← ContractCard, InvoiceTable etc.
-│   │   ├── lib/
-│   │   │   └── api-client.ts        ← typed fetch wrapper → apps/api
-│   │   └── package.json
-│   │
-│   ├── api/                         ← Express server (port 4000)
-│   │   ├── src/
-│   │   │   ├── routes/
-│   │   │   │   ├── contracts.ts
-│   │   │   │   ├── customers.ts
-│   │   │   │   ├── invoices.ts
-│   │   │   │   ├── events.ts        ← usage event ingest
-│   │   │   │   └── analytics.ts
-│   │   │   ├── services/            ← ALL business logic lives here
-│   │   │   │   ├── pricing-engine.ts
-│   │   │   │   ├── invoice-service.ts
-│   │   │   │   ├── revrec-engine.ts
-│   │   │   │   └── contracts-ai.ts
-│   │   │   ├── middleware/
-│   │   │   │   ├── auth.ts
-│   │   │   │   └── validate.ts
-│   │   │   └── server.ts            ← Express app entry point
-│   │   └── package.json
-│   │
-│   └── worker/                      ← Long-running Node process (no HTTP)
-│       ├── src/
-│       │   ├── consumers/
-│       │   │   ├── usage-aggregator.ts   ← flushes events → aggregates
-│       │   │   ├── invoice-generator.ts  ← generates + emails invoices
-│       │   │   └── revrec-scheduler.ts   ← month-end journal entries
-│       │   └── worker.ts            ← registers all consumers, starts
-│       └── package.json
-│
-├── packages/
-│   ├── db/                          ← Postgres client, shared by api + worker
-│   │   ├── src/
-│   │   │   ├── client.ts            ← postgres.js connection pool
-│   │   │   └── migrations/          ← 001_create_schema.sql etc.
-│   │   └── package.json
-│   │
-│   ├── shared/                      ← TypeScript types + Zod schemas
-│   │   ├── src/
-│   │   │   ├── types/
-│   │   │   │   ├── contract.ts
-│   │   │   │   ├── invoice.ts
-│   │   │   │   └── usage.ts
-│   │   │   └── schemas/             ← Zod — validated in api, reused in web
-│   │   └── package.json
-│   │
-│   └── queues/                      ← BullMQ queue + job type definitions
-│       ├── src/
-│       │   ├── usage-queue.ts
-│       │   └── invoice-queue.ts
-│       └── package.json
-│
-├── docker-compose.yml               ← postgres + redis + all three apps
-├── turbo.json                       ← Turborepo build orchestration
-└── package.json                     ← workspace root
+  apps/
+    web/                         # Next.js 14 dashboard
+      app/
+        (dashboard)/
+          contracts/
+          catalog/
+          meters/
+          invoices/
+          revenue/
+          usage/
+          audit/
+      components/
+        ui/                      # shadcn/ui primitives
+        domain/                  # workflow-specific components
+      lib/
+        api-client.ts
+
+    api/                         # Express API
+      src/
+        modules/
+          contracts/
+          catalog/
+          pricing/
+          metering/
+          invoicing/
+          revrec/
+          ai/
+          audit/
+        middleware/
+        server.ts
+
+    worker/                      # BullMQ consumers
+      src/
+        consumers/
+          usage-aggregator.ts
+          invoice-generator.ts
+          revrec-scheduler.ts
+        worker.ts
+
+  packages/
+    db/                          # Postgres client and migrations
+    shared/                      # TypeScript types and Zod schemas
+    queues/                      # BullMQ queue definitions and job types
+
+  docker-compose.yml
+  turbo.json
+  package.json
 ```
 
----
+## Domain Model
 
-# 🖥️ Frontend (apps/web)
+### Commercial Configuration
 
-## Stack
+- `customers`
+- `products`
+- `meters`
+- `plans`
+- `price_rules`
+- `contracts`
+- `contract_versions`
+- `contract_line_items`
+- `contract_amendments`
 
-* Next.js 14 (App Router)
-* React Server Components
-* Tailwind CSS
-* shadcn/ui
+### Usage Metering
 
-## Responsibilities
+- `usage_events`
+- `usage_aggregates`
+- `meter_definitions`
 
-* Pure UI layer
-* No business logic
-* Typed API calls to backend
+### Billing
 
-## Structure
+- `invoices`
+- `invoice_line_items`
+- `invoice_adjustments`
+- `credit_notes`
 
-```
-app/
-  (dashboard)/
-    contracts/
-    invoices/
-    customers/
-    analytics/
+### Revenue Recognition
 
-components/
-  ui/        # primitives
-  domain/    # business UI
+- `performance_obligations`
+- `revenue_schedules`
+- `journal_entries`
 
-lib/
-  api-client.ts
-```
+### Operations
 
-## Key Principles
+- `audit_logs`
+- `job_runs`
+- `ai_extraction_runs`
 
-* ❌ No DB access
-* ❌ No domain logic
-* ✅ All logic via API
+## Key Workflows
 
----
+### 1. AI Contract Intake
 
-# ⚙️ Backend (apps/api)
+User uploads or pastes contract terms. The AI extracts:
 
-## Stack
+- Customer and contract dates
+- Billing frequency
+- Payment terms
+- Product or plan references
+- Usage meters
+- Pricing rules
+- Minimum commitments
+- Free units
+- Overage rules
+- Revenue recognition method
+- Ambiguous clauses and confidence markers
 
-* Express
-* TypeScript
-* Zod validation
-* Raw SQL (postgres.js)
+Output is a draft billing configuration, not an active contract.
 
-## Architecture
+### 2. Human Review And Approval
 
-```
-routes → services → db
-```
+Finance user reviews the AI output in a structured UI:
 
-## Key Modules
+- Accept, edit, or reject extracted fields
+- Resolve ambiguous terms
+- Preview invoice impact
+- Preview revenue schedule
+- Approve contract activation
 
-### Routes
+Every approval and edit writes to the audit log.
 
-* contracts.ts
-* customers.ts
-* invoices.ts
-* events.ts
-* analytics.ts
+### 3. Product Catalog And Pricing Configuration
 
-### Services (Core Logic)
+RevFlow separates reusable catalog configuration from customer-specific contracts:
 
-* **pricing-engine.ts**
-* **invoice-service.ts**
-* **revrec-engine.ts**
-* **contracts-ai.ts**
+- Products define what is sold
+- Meters define what is measured
+- Plans define reusable commercial packages
+- Price rules define calculation behavior
+- Contracts can override plan defaults for enterprise deals
 
-👉 All business logic lives here
+Supported pricing models:
 
----
+- Flat recurring fee
+- Per-seat pricing
+- Pay-as-you-go usage
+- Tiered pricing
+- Volume pricing
+- Included units plus overage
+- Minimum commitment
+- Prepaid credit burn-down
+- Hybrid subscription plus usage
 
-## 🔑 Design Principles
+### 4. Usage Metering
 
-* Thin routes
-* Fat services
-* Type-safe validation (Zod)
-* No ORM magic (explicit SQL)
-
----
-
-# 🧵 Worker (apps/worker)
-
-## Purpose
-
-Handles async workloads via BullMQ
-
-## Consumers
-
-### 1. Usage Aggregator
-
-* Reads raw usage events
-* Aggregates periodically
-* Writes to DB
-
-### 2. Invoice Generator
-
-* Generates invoices
-* Sends emails (future)
-
-### 3. RevRec Scheduler
-
-* Runs month-end jobs
-* Creates journal entries
-
----
-
-## Characteristics
-
-* No HTTP server
-* Shared DB access
-* Runs continuously
-
----
-
-# 🧱 Shared Packages
-
-## 📊 packages/db
-
-* Postgres client
-* Migrations
-* Shared across API + Worker
-
-## 🧩 packages/shared
-
-* TypeScript types
-* Zod schemas
-* Single source of truth
-
-## 📬 packages/queues
-
-* BullMQ queue definitions
-* Job types
-
----
-
-# 🧠 Core Features
-
----
-
-## 1. Contracts AI Parser
-
-### Goal
-
-Convert unstructured contracts → structured billing config
-
-### Flow
-
-```
-PDF/Text → AI → JSON config → DB
+```txt
+POST /events
+  -> validate event
+  -> dedupe by idempotency key
+  -> enqueue aggregation job
+  -> aggregate by meter, customer, contract, and period
+  -> expose usage for invoice generation
 ```
 
-### Extracted Data
+Important concerns:
 
-* Pricing model
-* Billing frequency
-* Commitments
-* Usage terms
+- Idempotency
+- Backpressure
+- Late-arriving events
+- Period boundaries
+- Aggregation correctness
+- Query performance
 
----
+### 5. Invoice Lifecycle
 
-## 2. Pricing Engine
+Invoices are generated as drafts first.
 
-### Supports
+```txt
+draft -> approved -> issued -> paid
+      -> void
+      -> credited
+```
 
-* Flat-rate
-* Tiered pricing
-* Usage-based
-* Hybrid
+Draft invoices can be inspected before issue:
 
-### Design
+- Source contract
+- Billing period
+- Usage totals
+- Pricing rule applied
+- Line item calculations
+- Manual adjustments
+- Taxes placeholder
+- Revenue recognition impact
 
-Strategy pattern:
+### 6. Revenue Recognition
+
+RevFlow implements ASC 606-lite behavior for portfolio and interview purposes.
+
+Recognition methods:
+
+- Immediate recognition
+- Straight-line over service period
+- Usage-based recognition
+- Milestone-based recognition
+
+Outputs:
+
+- Revenue schedules
+- Earned vs deferred revenue
+- Journal entries
+- Monthly revenue reports
+
+### 7. Audit And Operations
+
+Finance systems must be explainable.
+
+Audit logs track:
+
+- Contract changes
+- AI extraction approval
+- Pricing rule edits
+- Invoice adjustments
+- Invoice state transitions
+- Revenue schedule generation
+
+Operational views track:
+
+- Failed usage events
+- Queue jobs
+- Invoice generation runs
+- Revrec scheduler runs
+
+## API Design
+
+Representative endpoints:
+
+```txt
+POST   /contracts/extractions
+GET    /contracts/extractions/:id
+POST   /contracts/:id/approve
+
+GET    /catalog/products
+POST   /catalog/products
+GET    /catalog/plans
+POST   /catalog/plans
+
+POST   /meters
+GET    /meters
+
+POST   /events
+GET    /usage/aggregates
+
+POST   /invoices/generate
+GET    /invoices
+GET    /invoices/:id
+POST   /invoices/:id/approve
+POST   /invoices/:id/issue
+
+GET    /revenue/schedules
+POST   /revenue/schedules/generate
+
+GET    /audit
+```
+
+## Pricing Engine Design
+
+The pricing engine should be deterministic, testable, and isolated from HTTP concerns.
 
 ```ts
-interface PricingStrategy {
-  calculate(input): PriceResult
+interface PricingStrategy<TConfig, TUsage> {
+  calculate(input: {
+    config: TConfig;
+    usage: TUsage;
+    period: BillingPeriod;
+    contractContext: ContractContext;
+  }): PriceResult;
 }
 ```
 
-Each pricing model = pluggable strategy
+Each pricing model is implemented as a separate strategy:
 
----
+- `FlatRateStrategy`
+- `SeatBasedStrategy`
+- `UsageBasedStrategy`
+- `TieredUsageStrategy`
+- `VolumePricingStrategy`
+- `MinimumCommitmentStrategy`
+- `CreditBurndownStrategy`
+- `HybridPricingStrategy`
 
-## 3. Usage Metering Pipeline
-
-### Flow
-
-```
-POST /events → Redis → Worker → Postgres
-```
-
-### Key Concepts
-
-* **Idempotency**
-
-  * Deduplicate via `event_id`
-
-* **Batching**
-
-  * Flush every N seconds
-
-* **Backpressure**
-
-  * Redis buffering
-
----
-
-## 4. Invoice Generation
-
-### Inputs
-
-* Contract config
-* Usage data
-
-### Output
-
-* Invoice records
-* Line items
-
-### Flow
-
-```
-Contract + Usage → Pricing Engine → Invoice
-```
-
----
-
-## 5. Revenue Recognition (ASC 606-lite)
-
-### Concept
-
-Split revenue into:
-
-* Deferred
-* Earned
-
-### Example
-
-Annual contract → monthly recognition
-
-### Outputs
-
-* Journal entries
-* Monthly reports
-
----
-
-# 🗄️ Database Design (High-Level)
-
-## Core Tables
-
-* contracts
-* customers
-* pricing_rules
-* usage_events
-* invoices
-* invoice_line_items
-* revenue_entries
+## Database Design Sketch
 
 ```mermaid
-
 erDiagram
-
   CUSTOMERS {
     uuid id PK
     string name
@@ -402,74 +429,116 @@ erDiagram
     timestamp created_at
   }
 
+  PRODUCTS {
+    uuid id PK
+    string name
+    string description
+    timestamp created_at
+  }
+
+  METERS {
+    uuid id PK
+    uuid product_id FK
+    string name
+    string event_name
+    string aggregation_type
+    string unit
+  }
+
+  PLANS {
+    uuid id PK
+    uuid product_id FK
+    string name
+    string billing_interval
+    string status
+  }
+
+  PRICE_RULES {
+    uuid id PK
+    uuid plan_id FK
+    uuid meter_id FK
+    string pricing_model
+    decimal unit_price
+    jsonb config
+  }
+
   CONTRACTS {
     uuid id PK
     uuid customer_id FK
     string status
     date start_date
     date end_date
-    decimal commitment_amount
-    jsonb raw_terms
     timestamp created_at
+  }
+
+  CONTRACT_VERSIONS {
+    uuid id PK
+    uuid contract_id FK
+    int version_number
+    date effective_from
+    date effective_to
+    jsonb terms_snapshot
   }
 
   CONTRACT_LINE_ITEMS {
     uuid id PK
-    uuid contract_id FK
+    uuid contract_version_id FK
+    uuid price_rule_id FK
     string name
-    string pricing_model
-    decimal unit_price
-    int included_units
-    jsonb tier_config
+    jsonb override_config
+  }
+
+  CONTRACT_AMENDMENTS {
+    uuid id PK
+    uuid contract_id FK
+    string reason
+    date effective_date
+    timestamp created_at
   }
 
   USAGE_EVENTS {
     uuid id PK
+    uuid meter_id FK
     uuid contract_id FK
-    uuid line_item_id FK
-    string event_id
+    string idempotency_key UK
     decimal quantity
-    string unit
     timestamp occurred_at
-    timestamp ingested_at
   }
 
   USAGE_AGGREGATES {
     uuid id PK
+    uuid meter_id FK
     uuid contract_id FK
-    uuid line_item_id FK
-    string period
+    date period_start
+    date period_end
     decimal total_quantity
-    timestamp last_updated
   }
 
   INVOICES {
     uuid id PK
+    uuid customer_id FK
     uuid contract_id FK
     string status
     decimal subtotal
-    decimal tax_amount
     decimal total
     date issue_date
     date due_date
-    string period_start
-    string period_end
   }
 
   INVOICE_LINE_ITEMS {
     uuid id PK
     uuid invoice_id FK
-    uuid line_item_id FK
+    uuid contract_line_item_id FK
     decimal quantity
-    decimal unit_price
     decimal amount
-    string description
+    jsonb calculation_details
   }
 
   REVENUE_SCHEDULES {
     uuid id PK
     uuid invoice_id FK
-    string period
+    date period_start
+    date period_end
     decimal earned_amount
     decimal deferred_amount
     string status
@@ -481,7 +550,6 @@ erDiagram
     string account_code
     string debit_credit
     decimal amount
-    string description
     date entry_date
   }
 
@@ -492,140 +560,174 @@ erDiagram
     string action
     jsonb before_state
     jsonb after_state
-    string actor
     timestamp created_at
   }
 
   CUSTOMERS ||--o{ CONTRACTS : has
-  CONTRACTS ||--o{ CONTRACT_LINE_ITEMS : has
-  CONTRACTS ||--o{ USAGE_EVENTS : receives
-  CONTRACTS ||--o{ INVOICES : generates
+  CUSTOMERS ||--o{ INVOICES : receives
 
-  CONTRACT_LINE_ITEMS ||--o{ USAGE_EVENTS : tracks
-  CONTRACT_LINE_ITEMS ||--o{ USAGE_AGGREGATES : aggregates
+  PRODUCTS ||--o{ PLANS : offers
+  PRODUCTS ||--o{ METERS : measures
+  PLANS ||--o{ PRICE_RULES : contains
+
+  CONTRACTS ||--o{ CONTRACT_VERSIONS : versions
+  CONTRACTS ||--o{ CONTRACT_AMENDMENTS : changes
+  CONTRACTS ||--o{ INVOICES : generates
+  CONTRACT_VERSIONS ||--o{ CONTRACT_LINE_ITEMS : contains
+  PRICE_RULES ||--o{ CONTRACT_LINE_ITEMS : applies_to
+
+  METERS ||--o{ USAGE_EVENTS : captures
+  METERS ||--o{ USAGE_AGGREGATES : aggregates
   CONTRACT_LINE_ITEMS ||--o{ INVOICE_LINE_ITEMS : billed_as
 
   INVOICES ||--o{ INVOICE_LINE_ITEMS : contains
-  INVOICES ||--o{ REVENUE_SCHEDULES : splits_into
+  INVOICES ||--o{ REVENUE_SCHEDULES : creates
+  REVENUE_SCHEDULES ||--o{ JOURNAL_ENTRIES : posts
 
-  REVENUE_SCHEDULES ||--o{ JOURNAL_ENTRIES : produces
-
-```
----
-
-## Relationships
+  CONTRACTS ||--o{ AUDIT_LOGS : audited
+  INVOICES ||--o{ AUDIT_LOGS : audited
 
 ```
-Customer → Contracts → Pricing Rules
-Contracts → Usage → Invoices → Revenue
-```
 
----
+## Non-Functional Requirements
 
-# 🔄 Queue Design
+### Correctness
 
-## Queues
+- Pricing calculations must be deterministic
+- Invoice generation should be repeatable for the same inputs
+- Usage ingestion must be idempotent
+- Financial state transitions should be explicit
 
-* usage-queue
-* invoice-queue
+### Reliability
 
-## Jobs
+- Queue jobs should be retryable
+- Failed jobs should be inspectable
+- Background workers should be horizontally scalable
+- Duplicate events should not double bill customers
 
-* usage aggregation
-* invoice generation
-* revrec scheduling
+### Performance
 
----
+- Usage events should be batchable
+- Aggregates should be query-friendly
+- Dashboard endpoints should avoid heavy transactional scans
+- Pricing engine should be testable with large synthetic usage inputs
 
-# 🐳 Infrastructure
+### Auditability
 
-## Docker Compose Services
+- All finance-impacting changes are logged
+- AI output is traceable to reviewed fields
+- Invoice line items can explain how amounts were calculated
 
-* Postgres
-* Redis
-* API
-* Web
-* Worker
+## Implementation Plan
 
-  <img width="1440" height="1080" alt="image" src="https://github.com/user-attachments/assets/f3dc9814-0028-4799-b867-b403ebb21e8d" />
+### Phase 1 - Foundation
 
+- Monorepo setup
+- Shared TypeScript and Zod packages
+- Postgres migrations
+- Docker Compose for Postgres and Redis
+- Basic Express API and health checks
+- Basic Next.js dashboard shell
 
-## Goals
+### Phase 2 - Core Billing Engine
 
-* One-command setup
-* Local-first development
-* AWS-ready
+- Customers, products, meters, plans, contracts
+- Pricing engine strategies
+- Usage event ingestion
+- Usage aggregation worker
+- Invoice generation from contract plus usage
+- Unit tests for pricing and invoice math
 
----
+### Phase 3 - Product Workflow
 
-# 📅 Execution Plan (2 Weeks)
+- Contract configuration UI
+- Meter and pricing rule builder
+- Invoice preview screen
+- Invoice approval and issue flow
+- Audit log viewer
+- Operational job dashboard
 
-## Week 1 — Core Engine
+### Phase 4 - AI And Revenue Recognition
 
-* DB schema
-* Pricing engine
-* Usage ingestion
-* Invoice generation
+- Contract text ingestion
+- AI extraction into draft config
+- Human review workflow
+- Revrec rules
+- Revenue schedule generation
+- Journal entries
 
-## Week 2 — Product + AI
+### Phase 5 - Portfolio Polish
 
-* Dashboard UI
-* AI contract parser
-* Approval workflows
-* Docs + demo
+- Seed data and demo script
+- Architecture diagrams
+- HLD write-up
+- LLD write-up for pricing engine and invoice lifecycle
+- Tradeoff notes
+- Screenshots and demo video
 
----
+## Interview Preparation Value
 
-# 🔐 Non-Functional Considerations
+### DSA And Fundamentals
 
-## Scalability
+- Deduplication and idempotency
+- Batching and aggregation
+- State machines
+- Interval and period calculations
+- Tiered pricing algorithms
+- Queue retry behavior
 
-* Horizontal workers
-* Queue-based processing
+### High-Level Design
 
-## Reliability
+- Event-driven architecture
+- Worker scalability
+- Data consistency boundaries
+- Postgres schema design
+- Queue and retry design
+- API and UI separation
+- Observability and auditability
 
-* Idempotent events
-* Retryable jobs
+### Low-Level Design
 
-## Observability (future)
+- Pricing strategy pattern
+- Invoice state machine
+- Contract versioning
+- Meter aggregation model
+- Revenue schedule generation
+- Validation and error modeling
 
-* Logs
-* Metrics
-* Job monitoring
+### Full-Stack Product Engineering
 
----
+- Complex configuration UI
+- AI review interface
+- Operational dashboards
+- Type-safe API client
+- Form validation and user feedback
+- Accessibility and responsive enterprise UI
 
-# 🚀 Future Enhancements
+## Key Design Decisions
 
-* Multi-tenant support
-* Role-based access
-* Stripe integration
-* Real-time analytics
-* Advanced revrec rules
-* Webhooks
+| Area               | Decision                             |
+| ------------------ | ------------------------------------ |
+| Monorepo           | Turborepo-style apps and packages    |
+| Frontend           | Next.js, Tailwind CSS, shadcn/ui, lucide-react |
+| Backend            | Express, TypeScript, Zod             |
+| Database           | PostgreSQL with explicit SQL         |
+| Queue              | Redis + BullMQ                       |
+| Workers            | Node.js background consumers         |
+| Shared contracts   | TypeScript types and Zod schemas     |
+| AI                 | Draft extraction with human approval |
+| Financial workflow | Explicit states and audit logs       |
 
----
+## Future Enhancements
 
-# 🧾 Key Design Decisions
-
-| Area     | Decision                     |
-| -------- | ---------------------------- |
-| DB       | Raw SQL over ORM             |
-| API      | Service-layer architecture   |
-| Queue    | BullMQ                       |
-| Types    | Shared via monorepo          |
-| Frontend | Thin client                  |
-| AI       | Contract → config extraction |
-
----
-
-# 🎯 What This System Demonstrates
-
-* Real-world SaaS billing complexity
-* Event-driven architecture
-* Async processing pipelines
-* Strong backend design (LLD + HLD)
-* AI integration in production workflows
-
----
+- Multi-tenant account model
+- Role-based access control
+- Stripe or payment gateway integration
+- ERP exports
+- Webhooks
+- CSV imports
+- Advanced tax handling
+- Multi-currency invoices
+- Parent-child account hierarchy
+- Real-time analytics
+- Contract renewal automation
