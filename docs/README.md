@@ -14,6 +14,7 @@ The project has not been implemented yet, so these documents are intentionally w
 | [API Plan](./api-plan.md) | Planned API resources, endpoint groups, and validation approach |
 | [Frontend Design](./frontend-design.md) | UI stack, design-system choices, and planned frontend surfaces |
 | [Implementation Roadmap](./implementation-roadmap.md) | Phased build plan from scaffold to polished demo |
+| [Phase 2 Execution Plan](./phase-2-execution-plan.md) | Detailed scope, schedule, deliverables, and acceptance criteria for Phase 2 |
 | [Local Development](./local-development.md) | Setup commands, ports, and local service notes |
 | [Interview Prep](./interview-prep.md) | HLD, LLD, DSA, and product-engineering talking points |
 

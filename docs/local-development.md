@@ -12,6 +12,7 @@
 npm install
 cp .env.example .env
 docker compose up -d
+npm run db:migrate
 npm run dev
 ```
 
@@ -25,5 +26,27 @@ npm run dev
 
 ## Notes
 
-The repo is currently scaffolded. Most domain endpoints are intentionally planned but not implemented yet.
+Run migrations after starting Postgres and before using database-backed API routes.
+
+The repo is currently in Phase 2. Core schema and DB health are being implemented; most domain endpoints are still planned.
+
+## Database
+
+Start local infrastructure:
+
+```bash
+docker compose up -d
+```
+
+Apply migrations:
+
+```bash
+npm run db:migrate
+```
+
+Check API database connectivity after starting the API:
+
+```txt
+http://localhost:4000/health/db
+```
 

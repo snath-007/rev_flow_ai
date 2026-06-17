@@ -18,16 +18,22 @@ Goal: create the runnable skeleton.
 
 ## Phase 2 - Database And Domain Core
 
-Goal: establish the core data model.
+Goal: establish the first end-to-end revenue workflow.
 
-- Create initial migrations
-- Add DB client
+- Create migrations and DB client
 - Add customer CRUD
 - Add product, meter, plan, and price rule models
 - Add contract draft and approval models
+- Add usage ingestion and aggregation
+- Add invoice draft generation and approval
 - Add audit log helper
+- Add basic UI pages for the core workflow
 
-## Phase 3 - Pricing And Metering
+Detailed plan: [Phase 2 Execution Plan](./phase-2-execution-plan.md)
+Demo script: [Phase 2 Demo Script](./phase-2-demo-script.md)
+Module notes: [Phase 2 Module Notes](./phase-2-module-notes.md)
+
+## Phase 3 - Advanced Pricing And Contract Dynamics
 
 Goal: calculate usage-based charges correctly.
 
@@ -42,16 +48,15 @@ Goal: calculate usage-based charges correctly.
 - Add usage aggregation worker
 - Add tests for pricing math
 
-## Phase 4 - Invoicing
+## Phase 4 - Invoice Lifecycle And Collections
 
-Goal: produce explainable draft invoices.
+Goal: move from draft invoice generation to a fuller invoice lifecycle.
 
-- Add invoice generation service
-- Add invoice line item calculation metadata
-- Add invoice state machine
-- Add invoice approval and issue endpoints
-- Add invoice preview UI
-- Add invoice list and detail pages
+- Add invoice issue endpoint
+- Add void and credit note flows
+- Add payment status tracking
+- Add invoice PDF/export option
+- Add invoice lifecycle tests
 
 ## Phase 5 - AI Extraction
 

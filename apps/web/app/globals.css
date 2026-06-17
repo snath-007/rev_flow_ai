@@ -104,3 +104,176 @@ h1 {
     font-size: 18px;
   }
 }
+
+.primary-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 28px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: #19643a;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.page-grid {
+  display: grid;
+  gap: 36px;
+}
+
+.compact h1 {
+  font-size: 44px;
+}
+
+.two-column {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.form-panel,
+.table-panel {
+  border: 1px solid #d8d5ca;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 20px;
+}
+
+.form-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.form-panel label {
+  display: block;
+  margin-bottom: 6px;
+  color: #354139;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.form-panel input,
+.form-panel textarea {
+  width: 100%;
+  border: 1px solid #cfcabf;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #17201a;
+  font: inherit;
+}
+
+.form-panel button {
+  border: 0;
+  border-radius: 6px;
+  background: #19643a;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 10px 14px;
+}
+
+.form-panel button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.error-text {
+  margin: 0;
+  color: #a21f1f;
+  font-size: 14px;
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.table-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.table-header span,
+.empty-state {
+  color: #647067;
+  font-size: 14px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e4e0d6;
+  padding: 12px 8px;
+  text-align: left;
+}
+
+th {
+  color: #59645d;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 860px) {
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.primary-link.secondary {
+  background: #34473a;
+}
+
+.stacked-forms {
+  display: grid;
+  gap: 16px;
+}
+
+.form-panel select {
+  width: 100%;
+  border: 1px solid #cfcabf;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #17201a;
+  font: inherit;
+  background: #ffffff;
+}
+
+.inline-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 520px) {
+  .inline-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.code-block {
+  margin: 0;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: #111827;
+  color: #f9fafb;
+  padding: 16px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
