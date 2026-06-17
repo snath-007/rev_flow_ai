@@ -1,3 +1,7 @@
+import { loadEnv } from "./config/env.js";
+
+loadEnv();
+
 import { createApp } from "./app.js";
 
 const port = Number(process.env.API_PORT ?? 4000);
