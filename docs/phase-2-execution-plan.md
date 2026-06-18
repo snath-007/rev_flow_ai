@@ -1,4 +1,4 @@
-# Phase 2 Execution Plan - Database And Domain Core
+﻿# Phase 2 Execution Plan - Database And Domain Core
 
 ## Goal
 
@@ -484,6 +484,8 @@ Completed:
 - Invoice approval
 - Invoice detail page with line item calculation visibility
 - Audit events for major finance-impacting mutations
+- Audit API and viewer page
+- Seed script for local demos
 - Focused invoice calculation tests
 - Demo script and module documentation
 
@@ -497,4 +499,4 @@ Deferred beyond Phase 2:
 - Revenue recognition schedules
 - AI contract extraction
 
-Phase 2 is considered complete when typecheck, build, migration, and the demo flow pass locally.
+Phase 2 is considered complete when typecheck, build, migration, seed, and the demo flow pass locally.

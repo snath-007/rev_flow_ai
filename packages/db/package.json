@@ -14,6 +14,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"

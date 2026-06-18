@@ -1,4 +1,4 @@
-# Local Development
+﻿# Local Development
 
 ## Prerequisites
 
@@ -13,7 +13,14 @@ npm install
 cp .env.example .env
 docker compose up -d
 npm run db:migrate
+npm run db:seed
 npm run dev
+```
+
+Run the worker in a separate terminal when testing background aggregation:
+
+```bash
+npm run dev -w @revflow/worker
 ```
 
 ## Services
@@ -21,32 +28,38 @@ npm run dev
 - Web: `http://localhost:3000`
 - API: `http://localhost:4000`
 - API health: `http://localhost:4000/health`
+- API DB health: `http://localhost:4000/health/db`
 - Postgres: `localhost:5432`
 - Redis: `localhost:6379`
 
 ## Notes
 
-Run migrations after starting Postgres and before using database-backed API routes.
+Run migrations after starting Postgres and before using database-backed API routes. Run the seed script when you want demo-ready customers, catalog records, contracts, usage events, and audit events.
 
-The repo is currently in Phase 2. Core schema and DB health are being implemented; most domain endpoints are still planned.
+Usage aggregation can happen through the worker or manually:
 
-## Database
-
-Start local infrastructure:
-
-```bash
-docker compose up -d
+```txt
+POST /usage/aggregates/run
 ```
 
-Apply migrations:
+Root scripts:
 
 ```bash
 npm run db:migrate
+npm run db:seed
+npm run dev
+npm run typecheck
+npm run test
 ```
 
-Check API database connectivity after starting the API:
+Package-level checks:
 
-```txt
-http://localhost:4000/health/db
+```bash
+npm run typecheck -w @revflow/api
+npm run test -w @revflow/api
+npm run typecheck -w @revflow/web
+npm run typecheck -w @revflow/shared
+npm run typecheck -w @revflow/db
+npm run typecheck -w @revflow/queues
+npm run typecheck -w @revflow/worker
 ```
-

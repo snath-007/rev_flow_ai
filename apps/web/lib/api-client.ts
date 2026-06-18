@@ -1,5 +1,7 @@
-import type {
+﻿import type {
   AddContractLineItemInput,
+  AggregateUsageInput,
+  AuditLog,
   Contract,
   ContractSummary,
   CreateContractInput,
@@ -12,6 +14,7 @@ import type {
   GenerateInvoiceInput,
   IngestUsageEventInput,
   Invoice,
+  JobRun,
   Meter,
   Plan,
   PriceRule,
@@ -159,14 +162,23 @@ export async function listUsageAggregates() {
   return data.aggregates;
 }
 
+export async function aggregateUsageForPeriod(input: AggregateUsageInput) {
+  const data = await request<{ aggregate: UsageAggregate }>("/usage/aggregates/run", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+
+  return data.aggregate;
+}
+
+export async function listInvoices() {
+  const data = await request<{ invoices: Invoice[] }>("/invoices");
+  return data.invoices;
+}
 
 export async function getInvoice(invoiceId: string) {
   const data = await request<{ invoice: Invoice }>(`/invoices/${invoiceId}`);
   return data.invoice;
-}
-export async function listInvoices() {
-  const data = await request<{ invoices: Invoice[] }>("/invoices");
-  return data.invoices;
 }
 
 export async function generateInvoice(input: GenerateInvoiceInput) {
@@ -184,4 +196,13 @@ export async function approveInvoice(invoiceId: string) {
   });
 
   return data.invoice;
+}
+
+export async function listAuditLogs() {
+  const data = await request<{ auditLogs: AuditLog[] }>("/audit");
+  return data.auditLogs;
+}
+export async function listJobRuns() {
+  const data = await request<{ jobRuns: JobRun[] }>("/ops/jobs");
+  return data.jobRuns;
 }

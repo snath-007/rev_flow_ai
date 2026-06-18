@@ -1,5 +1,5 @@
-import { Router } from "express";
-import { ingestUsageEventSchema } from "@revflow/shared";
+﻿import { Router } from "express";
+import { aggregateUsageSchema, ingestUsageEventSchema } from "@revflow/shared";
 
 import { validateBody } from "../../lib/http.js";
 import * as usageService from "./usage.service.js";
@@ -28,6 +28,15 @@ usageRouter.get("/aggregates", async (_req, res, next) => {
   try {
     const aggregates = await usageService.listUsageAggregates();
     res.status(200).json({ aggregates });
+  } catch (error) {
+    next(error);
+  }
+});
+
+usageRouter.post("/aggregates/run", validateBody(aggregateUsageSchema), async (req, res, next) => {
+  try {
+    const aggregate = await usageService.aggregateUsageForPeriod(req.body);
+    res.status(200).json({ aggregate });
   } catch (error) {
     next(error);
   }
