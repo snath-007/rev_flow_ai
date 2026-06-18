@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -206,6 +206,11 @@ h1 {
   font-size: 14px;
 }
 
+.muted-text {
+  color: #647067;
+  font-size: 12px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -277,3 +282,16 @@ th {
   font-size: 0.85rem;
   line-height: 1.5;
 }
+.inline-code-block {
+  max-width: 420px;
+  max-height: 180px;
+  margin: 0;
+  overflow: auto;
+  border-radius: 6px;
+  background: #f3f1ea;
+  color: #26332b;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+

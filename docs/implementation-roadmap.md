@@ -1,4 +1,4 @@
-# Implementation Roadmap
+﻿# Implementation Roadmap
 
 ## Phase 1 - Foundation
 
@@ -26,16 +26,17 @@ Goal: establish the first end-to-end revenue workflow.
 - Add contract draft and approval models
 - Add usage ingestion and aggregation
 - Add invoice draft generation and approval
-- Add audit log helper
+- Add audit log helper and viewer
+- Add seed data for local demos
 - Add basic UI pages for the core workflow
 
 Detailed plan: [Phase 2 Execution Plan](./phase-2-execution-plan.md)
 Demo script: [Phase 2 Demo Script](./phase-2-demo-script.md)
 Module notes: [Phase 2 Module Notes](./phase-2-module-notes.md)
 
-## Phase 3 - Advanced Pricing And Contract Dynamics
+## Phase 3 - Pricing Engine And Async Billing
 
-Goal: calculate usage-based charges correctly.
+Goal: move the working Phase 2 billing loop behind explicit pricing strategies, persisted usage aggregates, and worker-backed processing where useful.
 
 - Implement pricing engine interface
 - Add flat rate strategy
@@ -43,10 +44,12 @@ Goal: calculate usage-based charges correctly.
 - Add usage-based strategy
 - Add tiered usage strategy
 - Add minimum commitment support
-- Add usage event ingestion
-- Add idempotency key handling
+- Keep usage ingestion idempotent
+- Add persisted usage aggregates
 - Add usage aggregation worker
 - Add tests for pricing math
+
+Detailed Phase 3 plan: [Phase 3 Plan](./phase-3-plan.md)
 
 ## Phase 4 - Invoice Lifecycle And Collections
 
@@ -84,8 +87,6 @@ Goal: generate simple revenue schedules.
 
 Goal: make the project easy to understand and demo.
 
-- Add seed data
-- Add demo script
 - Add screenshots
 - Add architecture diagrams
 - Add HLD write-up
@@ -93,4 +94,3 @@ Goal: make the project easy to understand and demo.
 - Add LLD write-up for invoice lifecycle
 - Add tradeoff notes
 - Add final README demo section
-

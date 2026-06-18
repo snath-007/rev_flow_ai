@@ -1,14 +1,16 @@
-import cors from "cors";
+﻿import cors from "cors";
 import type { ErrorRequestHandler } from "express";
 import express from "express";
 import helmet from "helmet";
 
 import { toApiError } from "./lib/http.js";
+import { auditRouter } from "./modules/audit/audit.routes.js";
 import { catalogRouter } from "./modules/catalog/catalog.routes.js";
 import { contractsRouter } from "./modules/contracts/contracts.routes.js";
 import { customersRouter } from "./modules/customers/customers.routes.js";
-import { usageRouter } from "./modules/usage/usage.routes.js";
 import { invoicesRouter } from "./modules/invoices/invoices.routes.js";
+import { opsRouter } from "./modules/ops/ops.routes.js";
+import { usageRouter } from "./modules/usage/usage.routes.js";
 import { healthRouter } from "./routes/health.js";
 
 const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
@@ -38,10 +40,10 @@ export function createApp() {
   app.use("/contracts", contractsRouter);
   app.use("/usage", usageRouter);
   app.use("/invoices", invoicesRouter);
+  app.use("/audit", auditRouter);
+  app.use("/ops", opsRouter);
   app.use(errorHandler);
 
   return app;
 }
-
-
 

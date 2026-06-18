@@ -1,4 +1,4 @@
-import { createSqlClient } from "@revflow/db";
+﻿import { createSqlClient } from "@revflow/db";
 import type { GenerateInvoiceInput } from "@revflow/shared";
 import { calculateInvoiceLineItems, calculateInvoiceTotal } from "./invoice-calculator.js";
 
@@ -47,10 +47,13 @@ type BillableLineRow = {
   pricing_model: "flat" | "per_unit" | "tiered";
   unit_price: string;
   currency: string;
+  config: Record<string, unknown>;
   meter_id: string | null;
   meter_name: string | null;
   aggregation_type: "sum" | "count" | null;
   unit: string | null;
+  usage_source: "aggregate" | "raw_events" | "none";
+  usage_aggregate_id: string | null;
   event_count: string | number;
   total_quantity: string | null;
   billable_quantity: string | null;
@@ -216,32 +219,55 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
           pr.pricing_model,
           pr.unit_price,
           pr.currency,
+          pr.config,
           pr.meter_id,
           m.name as meter_name,
           m.aggregation_type,
           m.unit,
-          count(ue.id) as event_count,
-          coalesce(sum(ue.quantity), 0) as total_quantity,
+          case
+            when pr.meter_id is null then 'none'
+            when ua.id is not null then 'aggregate'
+            else 'raw_events'
+          end as usage_source,
+          ua.id as usage_aggregate_id,
+          case
+            when pr.meter_id is null then 0
+            else coalesce(ua.event_count, raw_usage.event_count, 0)
+          end as event_count,
+          case
+            when pr.meter_id is null then 0
+            else coalesce(ua.total_quantity, raw_usage.total_quantity, 0)
+          end as total_quantity,
           case
             when pr.meter_id is null then 1
-            when m.aggregation_type = 'count' then count(ue.id)::numeric
-            else coalesce(sum(ue.quantity), 0)
+            when ua.id is not null then ua.billable_quantity
+            when m.aggregation_type = 'count' then coalesce(raw_usage.event_count, 0)::numeric
+            else coalesce(raw_usage.total_quantity, 0)
           end as billable_quantity
         from contract_versions cv
         join contract_line_items cli on cli.contract_version_id = cv.id
         join price_rules pr on pr.id = cli.price_rule_id
         left join meters m on m.id = pr.meter_id
-        left join usage_events ue on ue.contract_id = cv.contract_id
-          and ue.meter_id = pr.meter_id
-          and ue.occurred_at >= ${input.periodStart}
-          and ue.occurred_at < (${input.periodEnd}::date + interval '1 day')
+        left join usage_aggregates ua on ua.contract_id = cv.contract_id
+          and ua.meter_id = pr.meter_id
+          and ua.period_start = ${input.periodStart}
+          and ua.period_end = ${input.periodEnd}
+        left join lateral (
+          select
+            count(ue.id) as event_count,
+            coalesce(sum(ue.quantity), 0) as total_quantity
+          from usage_events ue
+          where ue.contract_id = cv.contract_id
+            and ue.meter_id = pr.meter_id
+            and ue.occurred_at >= ${input.periodStart}
+            and ue.occurred_at < (${input.periodEnd}::date + interval '1 day')
+        ) raw_usage on pr.meter_id is not null
         where cv.contract_id = ${input.contractId}
           and cv.version_number = (
             select max(version_number)
             from contract_versions
             where contract_id = ${input.contractId}
           )
-        group by cli.id, pr.id, cli.name, pr.pricing_model, pr.unit_price, pr.currency, pr.meter_id, m.name, m.aggregation_type, m.unit
         order by cli.created_at asc
       `;
 
@@ -249,7 +275,10 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
         return "NO_BILLABLE_LINES" as const;
       }
 
-      const lineItems = calculateInvoiceLineItems(billableRows);
+      const lineItems = calculateInvoiceLineItems(billableRows, {
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd
+      });
       const subtotal = calculateInvoiceTotal(lineItems);
       const currency = lineItems[0]?.currency ?? "USD";
 
@@ -264,7 +293,7 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
           ${currency},
           ${subtotal},
           ${subtotal},
-          ${tx.json({ generatedFrom: "usage_events", lineCount: lineItems.length } as never)}
+          ${tx.json({ generatedFrom: "usage_aggregates_with_raw_event_fallback", lineCount: lineItems.length } as never)}
         )
         returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, calculation_snapshot, created_at, updated_at
       `;
@@ -325,4 +354,6 @@ export async function approveInvoice(id: string) {
     await sql.end({ timeout: 5 });
   }
 }
+
+
 
