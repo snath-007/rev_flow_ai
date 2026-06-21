@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   AddContractLineItemInput,
   AggregateUsageInput,
   AuditLog,
@@ -15,10 +15,12 @@
   IngestUsageEventInput,
   Invoice,
   JobRun,
+  JournalEntry,
   Meter,
   Plan,
   PriceRule,
   Product,
+  RevenueSchedule,
   UsageAggregate,
   UsageEvent
 } from "@revflow/shared";
@@ -205,4 +207,26 @@ export async function listAuditLogs() {
 export async function listJobRuns() {
   const data = await request<{ jobRuns: JobRun[] }>("/ops/jobs");
   return data.jobRuns;
+}
+
+export async function listRevenueSchedules() {
+  const data = await request<{ schedules: RevenueSchedule[] }>("/revenue/schedules");
+  return data.schedules;
+}
+
+export async function listJournalEntries() {
+  const data = await request<{ journalEntries: JournalEntry[] }>("/revenue/journal-entries");
+  return data.journalEntries;
+}
+
+export async function generateRevenueSchedules(invoiceId: string) {
+  return request<{
+    invoiceId: string;
+    performanceObligations: unknown[];
+    schedules: RevenueSchedule[];
+    journalEntries: JournalEntry[];
+  }>("/revenue/schedules/generate", {
+    method: "POST",
+    body: JSON.stringify({ invoiceId })
+  });
 }

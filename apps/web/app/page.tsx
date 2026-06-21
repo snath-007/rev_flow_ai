@@ -1,4 +1,4 @@
-﻿const workflowSteps = [
+const workflowSteps = [
   "AI contract intake",
   "Human review",
   "Billing configuration",
@@ -25,6 +25,7 @@ export default function HomePage() {
         <a className="primary-link secondary" href="/contracts">Open contracts</a>
         <a className="primary-link secondary" href="/usage">Open usage</a>
         <a className="primary-link secondary" href="/invoices">Open invoices</a>
+        <a className="primary-link secondary" href="/revenue">Open revenue</a>
         <a className="primary-link secondary" href="/audit">Open audit</a>
         <a className="primary-link secondary" href="/ops">Open ops</a>
       </nav>
@@ -40,4 +41,3 @@ export default function HomePage() {
     </main>
   );
 }
-

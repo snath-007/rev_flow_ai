@@ -1,34 +1,35 @@
-﻿# Implementation Roadmap
+# Implementation Roadmap
 
 ## Phase 1 - Foundation
 
-Goal: create the runnable skeleton.
+Status: complete.
 
-- Initialize monorepo
-- Add workspace package manager config
-- Add TypeScript config
-- Add Express API app
-- Add Next.js web app
-- Add worker app
-- Add shared package
-- Add db package
-- Add queues package
-- Add Docker Compose for Postgres and Redis
-- Add health checks
+Goal: create the runnable monorepo skeleton.
 
-## Phase 2 - Database And Domain Core
+- Monorepo setup
+- Shared TypeScript and Zod packages
+- Express API app
+- Next.js web app
+- Worker app scaffold
+- Database package and migration runner
+- Queue package scaffold
+- Docker Compose for Postgres and Redis
+- Health checks
+
+## Phase 2 - Core Billing Workflow
+
+Status: complete.
 
 Goal: establish the first end-to-end revenue workflow.
 
-- Create migrations and DB client
-- Add customer CRUD
-- Add product, meter, plan, and price rule models
-- Add contract draft and approval models
-- Add usage ingestion and aggregation
-- Add invoice draft generation and approval
-- Add audit log helper and viewer
-- Add seed data for local demos
-- Add basic UI pages for the core workflow
+- Customers
+- Catalog: products, meters, plans, price rules
+- Contract draft, line item, and approval workflow
+- Usage ingestion with idempotency
+- Draft invoice generation and approval
+- Audit log helper and viewer
+- Seed data for local demos
+- Basic UI pages for the core workflow
 
 Detailed plan: [Phase 2 Execution Plan](./phase-2-execution-plan.md)
 Demo script: [Phase 2 Demo Script](./phase-2-demo-script.md)
@@ -36,61 +37,74 @@ Module notes: [Phase 2 Module Notes](./phase-2-module-notes.md)
 
 ## Phase 3 - Pricing Engine And Async Billing
 
+Status: complete.
+
 Goal: move the working Phase 2 billing loop behind explicit pricing strategies, persisted usage aggregates, and worker-backed processing where useful.
 
-- Implement pricing engine interface
-- Add flat rate strategy
-- Add seat-based strategy
-- Add usage-based strategy
-- Add tiered usage strategy
-- Add minimum commitment support
-- Keep usage ingestion idempotent
-- Add persisted usage aggregates
-- Add usage aggregation worker
-- Add tests for pricing math
+- Pricing engine interface and strategy modules
+- Flat, per-unit, and tiered pricing
+- Persisted `usage_aggregates`
+- Idempotent/rerunnable usage aggregation
+- BullMQ queue factory and usage aggregation worker
+- Invoice generation from pricing engine output and aggregates
+- Raw-event fallback for local demo reliability
+- Ops job-run visibility
+- Tests for pricing math, rounding, zero usage, and tier behavior
 
-Detailed Phase 3 plan: [Phase 3 Plan](./phase-3-plan.md)
+Detailed plan: [Phase 3 Plan](./phase-3-plan.md)
+Checklist: [Phase 3 Execution Checklist](./phase-3-execution-checklist.md)
 
-## Phase 4 - Invoice Lifecycle And Collections
+## Phase 4 - Revenue Recognition
 
-Goal: move from draft invoice generation to a fuller invoice lifecycle.
+Status: complete.
 
-- Add invoice issue endpoint
-- Add void and credit note flows
-- Add payment status tracking
-- Add invoice PDF/export option
-- Add invoice lifecycle tests
+Goal: add ASC 606-lite revenue recognition without collapsing it into billing.
 
-## Phase 5 - AI Extraction
+- Revenue recognition migration
+- Performance obligations
+- Revenue schedules
+- Immediate recognition
+- Straight-line monthly recognition
+- Deterministic journal entries
+- Revenue API routes
+- `/revenue` UI
+- Source invoice/customer context
+- Audit event enrichment
 
-Goal: convert contract text into reviewable draft configuration.
+Simplifications kept deliberately:
 
-- Add contract extraction run model
-- Add prompt and structured output schema
-- Add mocked AI provider first
-- Add optional real provider integration later
-- Add extraction review UI
-- Add apply-to-contract workflow
+- Usage-priced invoice lines default to immediate recognition for the MVP
+- Schedule generation is synchronous
+- No full ASC 606 compliance claim
+- No ERP/GL integration
+- No advanced allocation, amendment, proration, or FX accounting
 
-## Phase 6 - Revenue Recognition
+Checklist: [Phase 4 Execution Checklist](./phase-4-execution-checklist.md)
 
-Goal: generate simple revenue schedules.
+## Phase 5 - AI Agent Layer
 
-- Add performance obligation model
-- Add immediate recognition
-- Add straight-line recognition
-- Add usage-based recognition
-- Add journal entry generation
-- Add revenue schedule UI
+Status: planned.
 
-## Phase 7 - Portfolio Polish
+Goal: add AI where it is genuinely valuable and keep deterministic finance math in code.
 
-Goal: make the project easy to understand and demo.
+- Contract text/PDF extraction into draft config
+- Ambiguity detection and confidence markers
+- Human review before applying extracted terms
+- Invoice anomaly detection
+- Natural-language Q&A over billing/revenue data
+- Dunning email draft generation with human review
 
-- Add screenshots
-- Add architecture diagrams
-- Add HLD write-up
-- Add LLD write-up for pricing engine
-- Add LLD write-up for invoice lifecycle
-- Add tradeoff notes
-- Add final README demo section
+## Phase 6 - Reporting, Integrations, And Portfolio Polish
+
+Status: planned.
+
+Goal: make the project easy to understand, demo, and discuss as a production architecture.
+
+- MRR, ARR, NRR, revenue waterfall, and DSO dashboards
+- Payment and reconciliation simulation
+- ERP/CRM export stubs
+- Architecture diagrams
+- HLD write-up
+- LLD write-up for pricing engine, invoice lifecycle, and revenue recognition
+- Production tradeoff notes
+- Screenshots and demo video
