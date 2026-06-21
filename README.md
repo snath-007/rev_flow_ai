@@ -1,4 +1,4 @@
-﻿# RevFlow - AI Revenue Automation Workbench
+# RevFlow - AI Revenue Automation Workbench
 
 RevFlow is a portfolio-grade proof of concept for an AI-assisted order-to-cash revenue automation platform for modern B2B SaaS companies.
 
@@ -114,8 +114,8 @@ Next.js dashboard for the finance/operator workflow:
 - Usage event visibility
 - Invoice preview, detail, and approval
 - Audit log inspection
-- Future revenue schedule review
-- Future operational job dashboard
+- Revenue schedule review
+- Operational job dashboard
 - Future AI review and exception workflow
 
 The frontend should feel like a real enterprise workflow tool, not a thin demo shell. It should prioritize dense but readable tables, forms, review states, validation feedback, calculation explainability, and clear state transitions.
@@ -183,6 +183,7 @@ rev_flow_ai/
         usage/
         invoices/
         audit/
+        revenue/
       lib/
         api-client.ts
 
@@ -190,13 +191,14 @@ rev_flow_ai/
       src/
         modules/
           audit/
+        revenue/
           catalog/
           contracts/
           customers/
           invoices/
           usage/
           pricing/               # Phase 3
-          revrec/                # Later phase
+          revrec/                # Phase 4 revenue recognition
           ai/                    # Later phase
         routes/
         server.ts
@@ -463,6 +465,7 @@ GET    /audit
 
 POST   /revenue/schedules/generate
 GET    /revenue/schedules
+GET    /revenue/journal-entries
 
 POST   /contracts/extractions
 GET    /contracts/extractions/:id
@@ -499,7 +502,7 @@ The engine returns calculation snapshots that can be stored on invoice line item
 
 ## Current Implementation Status
 
-Phase 1 and Phase 2 are implemented as a working product slice.
+Phases 1 through 4 are implemented as a working product slice.
 
 Completed:
 
@@ -520,6 +523,9 @@ Completed:
 - Ops job-run API/page for background work
 - Seed data script for local demos
 - Focused pricing and invoice calculation tests
+- ASC 606-lite revenue recognition schedules
+- Journal entry generation from revenue schedules
+- Revenue recognition API and `/revenue` UI
 
 Known remaining shortcuts:
 
@@ -527,8 +533,10 @@ Known remaining shortcuts:
 - Invoice generation retains raw-event fallback if a usage aggregate is missing.
 - Contract approval does not yet snapshot all pricing config needed for long-term historical explainability.
 - Job-run visibility is intentionally simple and focused on recent background jobs.
+- Revenue schedule and journal-entry generation are synchronous for POC clarity.
+- Usage-priced invoice lines currently default to immediate recognition; full usage-based recognition remains a later hardening path.
 
-These shortcuts are acceptable for the Phase 3 POC and become inputs to later production-hardening notes.
+These shortcuts are acceptable for the Phase 4 POC and become inputs to later production-hardening notes.
 
 ## Implementation Plan
 
@@ -575,15 +583,29 @@ Detailed plan: [docs/phase-3-plan.md](./docs/phase-3-plan.md)
 
 ### Phase 4 - Revenue Recognition
 
+Status: complete.
+
 Goal: implement ASC 606-lite recognition separate from invoicing.
 
-- Performance obligation model
+Implemented:
+
+- Performance obligation persistence
+- Revenue schedule persistence
 - Immediate recognition
-- Straight-line recognition
-- Usage-based recognition
-- Deferred vs unbilled revenue reporting
-- Revenue schedules
-- Journal entries
+- Straight-line monthly recognition
+- Deterministic journal entry generation
+- `/revenue` API routes and UI
+- Source invoice/customer context in revenue views
+- Audit events for revenue schedule generation
+
+Simplifications:
+
+- Not a full ASC 606 compliance engine
+- Usage-priced lines default to immediate recognition for the MVP
+- Schedule generation is synchronous instead of worker-backed
+- No advanced SSP allocation, amendments, proration, ERP export, or FX accounting
+
+Detailed checklist: [docs/phase-4-execution-checklist.md](./docs/phase-4-execution-checklist.md)
 
 ### Phase 5 - AI Agent Layer
 

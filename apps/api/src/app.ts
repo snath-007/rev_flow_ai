@@ -1,4 +1,4 @@
-﻿import cors from "cors";
+import cors from "cors";
 import type { ErrorRequestHandler } from "express";
 import express from "express";
 import helmet from "helmet";
@@ -10,6 +10,7 @@ import { contractsRouter } from "./modules/contracts/contracts.routes.js";
 import { customersRouter } from "./modules/customers/customers.routes.js";
 import { invoicesRouter } from "./modules/invoices/invoices.routes.js";
 import { opsRouter } from "./modules/ops/ops.routes.js";
+import { revrecRouter } from "./modules/revrec/revrec.routes.js";
 import { usageRouter } from "./modules/usage/usage.routes.js";
 import { healthRouter } from "./routes/health.js";
 
@@ -42,6 +43,7 @@ export function createApp() {
   app.use("/invoices", invoicesRouter);
   app.use("/audit", auditRouter);
   app.use("/ops", opsRouter);
+  app.use("/revenue", revrecRouter);
   app.use(errorHandler);
 
   return app;

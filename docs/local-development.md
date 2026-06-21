@@ -1,4 +1,4 @@
-﻿# Local Development
+# Local Development
 
 ## Prerequisites
 
@@ -26,6 +26,9 @@ npm run dev -w @revflow/worker
 ## Services
 
 - Web: `http://localhost:3000`
+- Revenue UI: `http://localhost:3000/revenue`
+- Audit UI: `http://localhost:3000/audit`
+- Ops UI: `http://localhost:3000/ops`
 - API: `http://localhost:4000`
 - API health: `http://localhost:4000/health`
 - API DB health: `http://localhost:4000/health/db`
@@ -63,3 +66,16 @@ npm run typecheck -w @revflow/db
 npm run typecheck -w @revflow/queues
 npm run typecheck -w @revflow/worker
 ```
+
+## Revenue Recognition Demo Notes
+
+After generating and approving an invoice, open `/revenue` and generate revenue schedules for the approved invoice.
+
+The Phase 4 revenue flow creates:
+
+- Performance obligations
+- Revenue schedules
+- Draft journal entries
+- Audit events for schedule generation
+
+Generation is synchronous in the POC. Run `npm run db:migrate` before using `/revenue`, because migration `006_create_revenue_recognition.sql` creates the revenue recognition tables.

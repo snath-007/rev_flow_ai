@@ -1,6 +1,6 @@
-﻿# Demo Script
+# Demo Script
 
-Use this walkthrough to demo the current RevFlow POC end to end.
+Use this walkthrough to demo the current RevFlow POC end to end through Phase 4.
 
 ## Setup
 
@@ -35,8 +35,10 @@ Open:
 9. Generate a draft invoice from `/invoices` for the billing period.
 10. Open invoice detail and explain the calculation snapshot, including pricing strategy and usage source.
 11. Approve the draft invoice.
-12. Open `/audit` and show the finance-impacting mutation trail.
-13. Open `/ops` and show recent usage aggregation jobs.
+12. Open `/revenue` and generate revenue schedules for the approved invoice.
+13. Explain the recognized/deferred schedule rows and generated journal entries.
+14. Open `/audit` and show the finance-impacting mutation trail, including revenue schedule generation.
+15. Open `/ops` and show recent usage aggregation jobs.
 
 ## What To Explain
 
@@ -47,13 +49,17 @@ Open:
 - Usage aggregates are persisted and rerunnable.
 - Invoices are generated from approved terms plus usage aggregates, with raw-event fallback for demo reliability.
 - Pricing math is deterministic strategy code, not AI output.
+- Revenue recognition is separate from billing and creates schedules plus journal entries.
+- Flat lines default to straight-line recognition; usage-priced lines default to immediate recognition for the MVP.
 - Audit logs are written for finance-impacting mutations.
-- Ops views expose background job runs.
+- Ops views expose background usage aggregation job runs.
 
 ## Current Limitations
 
 - No authentication or tenant isolation yet.
 - No amendments or contract renewals yet.
 - Invoice issuing/payment is represented as future lifecycle work.
-- Revenue recognition schedules are Phase 4.
+- Revenue recognition is ASC 606-lite only and not a compliance engine.
+- Usage-based revenue recognition is deferred beyond the MVP; usage-priced lines currently recognize immediately.
+- Revenue schedule generation is synchronous for POC clarity.
 - AI extraction and anomaly review are later phases.
