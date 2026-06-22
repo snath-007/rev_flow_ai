@@ -26,6 +26,7 @@ export default function HomePage() {
         <a className="primary-link secondary" href="/usage">Open usage</a>
         <a className="primary-link secondary" href="/invoices">Open invoices</a>
         <a className="primary-link secondary" href="/revenue">Open revenue</a>
+        <a className="primary-link secondary" href="/ai">Open AI review</a>
         <a className="primary-link secondary" href="/audit">Open audit</a>
         <a className="primary-link secondary" href="/ops">Open ops</a>
       </nav>

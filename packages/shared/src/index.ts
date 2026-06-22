@@ -9,6 +9,7 @@ export * from "./schemas/invoice.js";
 export * from "./schemas/usage.js";
 export * from "./schemas/ops.js";
 export * from "./schemas/revrec.js";
+export * from "./schemas/ai.js";
 export * from "./types/domain.js";
 
 

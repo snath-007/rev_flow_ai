@@ -1,5 +1,7 @@
 # Phase 5 Execution Checklist - AI Agent Layer
 
+Phase status: complete.
+
 ## Objective
 
 Phase 5 adds AI-assisted finance workflows on top of the deterministic billing and revenue foundation built in Phases 1-4.
@@ -45,7 +47,7 @@ Out of scope:
 
 ## Milestone 0 - Baseline Verification
 
-Status: pending
+Status: complete
 
 Goal: confirm Phase 4 is healthy before adding AI workflow code.
 
@@ -66,7 +68,7 @@ Acceptance criteria:
 
 ## Milestone 1 - AI Extraction Data Model
 
-Status: pending
+Status: complete
 
 Goal: add persistence for AI-assisted extraction runs and reviewed outputs.
 
@@ -107,7 +109,7 @@ Acceptance criteria:
 
 ## Milestone 2 - AI Provider Interface And Mock Provider
 
-Status: pending
+Status: complete
 
 Goal: create a provider boundary before any real AI provider integration.
 
@@ -133,7 +135,7 @@ Acceptance criteria:
 
 ## Milestone 3 - Contract Extraction Service
 
-Status: pending
+Status: complete
 
 Goal: create extraction runs from pasted contract text and store model output.
 
@@ -160,7 +162,7 @@ Acceptance criteria:
 
 ## Milestone 4 - AI Extraction API
 
-Status: pending
+Status: complete
 
 Goal: expose extraction workflow through API routes.
 
@@ -173,6 +175,8 @@ GET  /ai/extractions/:id
 POST /ai/extractions/:id/review
 POST /ai/extractions/:id/apply
 ```
+
+Implementation note: create/list/detail routes land in Milestone 4. Review and apply routes land with the review/apply workflow milestones so no placeholder endpoints are exposed.
 
 Tasks:
 
@@ -188,7 +192,7 @@ Acceptance criteria:
 
 ## Milestone 5 - Human Review UI
 
-Status: pending
+Status: complete
 
 Goal: add an operator-facing review screen for extracted contract terms.
 
@@ -212,10 +216,11 @@ Acceptance criteria:
 - `/ai` page works with mock provider.
 - Low-confidence/ambiguous fields are visible.
 - UI does not imply AI output is already active billing config.
+- Conversational review assistance remains an optional Phase 5 extension; field edits and approval decisions are explicit human actions in the current POC.
 
 ## Milestone 6 - Apply Reviewed Extraction To Draft Config
 
-Status: pending
+Status: complete
 
 Goal: turn reviewed AI output into normal draft records through existing deterministic services.
 
@@ -233,10 +238,11 @@ Acceptance criteria:
 - Apply action creates draft/reviewable state only.
 - It does not approve contracts or activate billing.
 - Existing contract approval flow remains the activation gate.
+- Milestone 6 implementation note: reviewed output creates or matches a customer and creates a draft contract only; catalog/price-rule line items remain manual because AI output does not contain trusted internal IDs.
 
 ## Milestone 7 - Extraction Explainability And Audit
 
-Status: pending
+Status: complete
 
 Goal: make AI output traceable and defensible.
 
@@ -256,7 +262,7 @@ Acceptance criteria:
 
 ## Milestone 8 - Optional Real Provider Adapter
 
-Status: pending
+Status: complete
 
 Goal: add a narrow real-provider path only after mock workflow is stable.
 
@@ -273,9 +279,11 @@ Acceptance criteria:
 - Real provider is opt-in.
 - Provider failures are persisted and user-visible.
 
+Implementation note: Ollama is the first real adapter, using schema-constrained local inference through `/api/chat`. The mock remains the default, and the provider-neutral interface permits additional adapters without changing extraction routes or services.
+
 ## Milestone 9 - Documentation And Demo Refresh
 
-Status: pending
+Status: complete
 
 Goal: update docs so Phase 5 behavior is demoable and does not overclaim autonomy.
 
@@ -322,6 +330,8 @@ npm run typecheck -w @revflow/api
 npm run typecheck -w @revflow/web
 npm run test -w @revflow/api
 ```
+
+Final verification on 2026-06-22: the root monorepo typecheck completed 9/9 tasks across all six workspaces, and the API regression suite passed 10/10 test files and 56/56 tests.
 
 ## Suggested Execution Order
 

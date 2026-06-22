@@ -5,6 +5,7 @@
 - Node.js 20+
 - npm
 - Docker Desktop or compatible Docker runtime
+- Optional: Ollama for local real-model contract extraction
 
 ## Setup
 
@@ -26,6 +27,7 @@ npm run dev -w @revflow/worker
 ## Services
 
 - Web: `http://localhost:3000`
+- AI review UI: `http://localhost:3000/ai`
 - Revenue UI: `http://localhost:3000/revenue`
 - Audit UI: `http://localhost:3000/audit`
 - Ops UI: `http://localhost:3000/ops`
@@ -66,6 +68,29 @@ npm run typecheck -w @revflow/db
 npm run typecheck -w @revflow/queues
 npm run typecheck -w @revflow/worker
 ```
+
+## AI Extraction Demo Notes
+
+The default `AI_PROVIDER=mock` is deterministic, requires no credentials, and is the recommended repeatable demo path.
+
+For local model inference:
+
+```bash
+ollama pull qwen2.5:3b
+```
+
+Set these values in the root `.env` and restart the API:
+
+```env
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:3b
+OLLAMA_TIMEOUT_MS=120000
+```
+
+The API development script loads the root `.env`. Open `/ai`, paste contract text, inspect source snippets and confidence, explicitly accept/edit/reject every field, then approve or reject the extraction. Applying an approved extraction creates or matches a customer and creates a draft contract only; normal contract approval remains the activation gate.
+
+Run `npm run db:migrate` before using this workflow because migration `007_create_ai_extraction_runs.sql` creates the extraction and review tables. Pointing `OLLAMA_BASE_URL` at another host sends the pasted contract text to that host.
 
 ## Revenue Recognition Demo Notes
 

@@ -97,7 +97,7 @@ These rules keep the POC credible as a finance system rather than a billing CRUD
                                   | Node + BullMQ |
                                   +---------------+
 
-AI provider calls are orchestrated by the API for extraction, review, anomaly, or natural-language workflows.
+AI provider calls are currently orchestrated by the API for contract extraction. Review and apply remain deterministic application workflows; anomaly and natural-language workflows are future extensions.
 AI does not own deterministic financial calculations.
 ```
 
@@ -116,7 +116,7 @@ Next.js dashboard for the finance/operator workflow:
 - Audit log inspection
 - Revenue schedule review
 - Operational job dashboard
-- Future AI review and exception workflow
+- AI-assisted contract extraction and human review workspace
 
 The frontend should feel like a real enterprise workflow tool, not a thin demo shell. It should prioritize dense but readable tables, forms, review states, validation feedback, calculation explainability, and clear state transitions.
 
@@ -160,13 +160,15 @@ Queue infrastructure for buffering work, absorbing usage spikes, retrying failed
 
 ### AI Layer
 
-AI is reserved for judgment-heavy or unstructured-input workflows:
+AI is reserved for judgment-heavy or unstructured-input workflows.
 
-- Contract text/PDF extraction into draft billing configuration
-- Ambiguity and exception flagging before activation
-- Invoice anomaly detection
-- Natural-language Q&A over billing and revenue data
-- Drafting dunning or collections communications with human review
+Phase 5 implements:
+
+- Pasted contract-text extraction into draft terms
+- Confidence, ambiguity, missing-field, and source-evidence visibility
+- Provider-neutral mock and local Ollama inference
+
+Future candidates include invoice anomaly detection, natural-language finance Q&A, and drafting dunning or collections communications with human review.
 
 AI does not directly activate billing. It produces drafts, explanations, or recommendations that must be reviewed or governed by deterministic rules.
 
@@ -183,6 +185,7 @@ rev_flow_ai/
         usage/
         invoices/
         audit/
+        ai/
         revenue/
       lib/
         api-client.ts
@@ -191,7 +194,7 @@ rev_flow_ai/
       src/
         modules/
           audit/
-        revenue/
+          revenue/
           catalog/
           contracts/
           customers/
@@ -199,7 +202,7 @@ rev_flow_ai/
           usage/
           pricing/               # Phase 3
           revrec/                # Phase 4 revenue recognition
-          ai/                    # Later phase
+          ai/                    # Phase 5 extraction and review
         routes/
         server.ts
 
@@ -277,33 +280,30 @@ Revenue recognition represents when value is earned. It must not be collapsed in
 
 ### 1. Contract Intake And AI Extraction
 
-User uploads or pastes contract terms. AI can extract:
+User pastes contract text. The selected provider can extract:
 
-- Customer and contract dates
-- Billing frequency
-- Payment terms
-- Product or plan references
-- Usage meters
-- Pricing rules
-- Minimum commitments
-- Free units
-- Overage rules
+- Customer name and billing email
+- Contract start and end dates
+- Billing frequency and payment terms
+- Product or plan name
+- Pricing model, unit price, and currency
 - Revenue recognition method
-- Ambiguous clauses and confidence markers
+- Ambiguities, missing fields, confidence, and source snippets
 
-Output is a draft billing configuration, not an active contract.
+Output is persisted as a reviewable draft, not active billing configuration.
 
 ### 2. Human Review And Approval
 
-Finance user reviews the draft configuration:
+Finance user reviews the extraction:
 
-- Accept, edit, or reject extracted fields
-- Resolve ambiguous terms
-- Preview invoice impact
-- Preview future revenue schedule impact
-- Approve contract activation
+- Accept, edit, or reject every extracted field
+- Resolve ambiguous or missing terms
+- Approve or reject the reviewed extraction
+- Apply an approved extraction to a matched/created customer and draft contract
+- Add trusted catalog/price-rule configuration manually
+- Approve the resulting contract through the existing activation workflow
 
-Every approval and finance-impacting edit writes to the audit log.
+Review and apply actions write to the audit log. Applying AI output never approves or activates the contract.
 
 ### 3. Product Catalog And Pricing Configuration
 
@@ -467,9 +467,11 @@ POST   /revenue/schedules/generate
 GET    /revenue/schedules
 GET    /revenue/journal-entries
 
-POST   /contracts/extractions
-GET    /contracts/extractions/:id
-POST   /contracts/extractions/:id/apply
+GET    /ai/extractions
+POST   /ai/extractions
+GET    /ai/extractions/:id
+POST   /ai/extractions/:id/review
+POST   /ai/extractions/:id/apply
 ```
 
 ## Pricing Engine Design
@@ -502,7 +504,7 @@ The engine returns calculation snapshots that can be stored on invoice line item
 
 ## Current Implementation Status
 
-Phases 1 through 4 are implemented as a working product slice.
+Phases 1 through 5 are implemented as a working product slice.
 
 Completed:
 
@@ -526,6 +528,11 @@ Completed:
 - ASC 606-lite revenue recognition schedules
 - Journal entry generation from revenue schedules
 - Revenue recognition API and `/revenue` UI
+- Persisted AI extraction runs with provider, model, prompt, confidence, ambiguity, and error metadata
+- Provider-neutral AI boundary with deterministic mock and opt-in local Ollama adapters
+- `/ai` contract extraction and field-level human review workspace
+- Approved extraction application to matched/created customers and draft contracts only
+- Audit visibility for AI extraction creation, review, failure, and apply actions
 
 Known remaining shortcuts:
 
@@ -535,8 +542,11 @@ Known remaining shortcuts:
 - Job-run visibility is intentionally simple and focused on recent background jobs.
 - Revenue schedule and journal-entry generation are synchronous for POC clarity.
 - Usage-priced invoice lines currently default to immediate recognition; full usage-based recognition remains a later hardening path.
+- AI intake is paste-based text; PDF upload, OCR, and multi-document reconciliation are deferred.
+- Applying reviewed AI output creates a draft contract without trusted catalog or price-rule links.
+- Local small-model confidence may be optimistic, so explicit field decisions and contract approval remain mandatory.
 
-These shortcuts are acceptable for the Phase 4 POC and become inputs to later production-hardening notes.
+These shortcuts are acceptable for the current POC and become inputs to Phase 6 and the production-hardening notes.
 
 ## Implementation Plan
 
@@ -607,29 +617,50 @@ Simplifications:
 
 Detailed checklist: [docs/phase-4-execution-checklist.md](./docs/phase-4-execution-checklist.md)
 
-### Phase 5 - AI Agent Layer
+### Phase 5 - AI-Assisted Contract Extraction
 
-Goal: add AI where it is genuinely valuable.
+Status: complete.
 
-- Contract text/PDF extraction into draft config
-- Ambiguity detection and confidence markers
+Goal: turn unstructured commercial text into traceable drafts while deterministic services retain control of finance workflows.
+
+Implemented:
+
+- Persisted extraction runs and review history
+- Provider-neutral `AiProvider` contract
+- Deterministic mock provider for repeatable tests and demos
+- Opt-in local Ollama provider with schema-constrained output
+- Confidence, ambiguity, missing-field, and source-snippet visibility
+- Field-level accept, edit, and reject decisions
+- Human approval or rejection of the extraction
+- Conservative application to a matched/created customer and draft contract
+- Audit events for extraction lifecycle actions
+- `/ai` operator workspace
+
+Deferred:
+
+- PDF/OCR and multi-document ingestion
+- Autonomous contract activation
 - Invoice anomaly detection
-- Natural-language Q&A over billing/revenue data
-- Dunning email draft generation with human review
+- Natural-language finance Q&A
+- Dunning communication assistance
 
-### Phase 6 - Reporting, Integrations, And Portfolio Polish
+Detailed checklist: [docs/phase-5-execution-checklist.md](./docs/phase-5-execution-checklist.md)
 
-Goal: make the project easy to understand, demo, and discuss as a production architecture.
+### Phase 6 - Productization, Reporting, And Deployment
 
-- Operational job dashboard
-- MRR, ARR, NRR, revenue waterfall, and DSO dashboards
-- Payment and reconciliation simulation
-- ERP/CRM export stubs
-- Architecture diagrams
-- HLD write-up
-- LLD write-up for pricing engine and invoice lifecycle
-- Tradeoff notes
-- Screenshots and demo video
+Status: planned.
+
+Goal: turn the functional POC into a coherent, access-controlled, deployable product demonstration.
+
+- Standardize navigation, visual language, responsive behavior, and end-to-end UX
+- Add authentication, customer/tenant onboarding, and role-based access control
+- Introduce tenant-aware ownership boundaries before exposing the application online
+- Add MRR, ARR, NRR, revenue waterfall, AR, and DSO reporting
+- Simulate payment receipt and reconciliation
+- Add ERP/CRM export stubs and integration boundaries
+- Define hosted deployment for web, API, worker, Postgres, Redis, and AI-provider configuration
+- Add production architecture, security, observability, backup, and scaling notes
+- Refresh screenshots, demo data, and portfolio walkthrough
 
 ## Local Development
 
@@ -641,6 +672,8 @@ npm run db:migrate
 npm run db:seed
 npm run dev
 ```
+
+The default `AI_PROVIDER=mock` requires no model download or external credentials. For local model inference, install Ollama, run `ollama pull qwen2.5:3b`, set `AI_PROVIDER=ollama`, and restart the API. See [docs/local-development.md](./docs/local-development.md) for provider details.
 
 Services:
 
@@ -718,7 +751,7 @@ npm run typecheck -w @revflow/db
 | Workers | Node.js background consumers |
 | Shared contracts | TypeScript types and Zod schemas |
 | Pricing | Deterministic strategy engine, no AI math |
-| AI | Draft extraction, anomaly review, Q&A, human approval |
+| AI | Provider-neutral draft extraction with mandatory human review; no financial math |
 | Financial workflow | Explicit states, snapshots, and audit logs |
 | Repo strategy | Keep monorepo for POC; document production decomposition path |
 
@@ -744,5 +777,8 @@ npm run typecheck -w @revflow/db
 - Project domain reference: [references/inspiration.md](./references/inspiration.md)
 - Documentation map: [docs/README.md](./docs/README.md)
 - Phase 3 plan: [docs/phase-3-plan.md](./docs/phase-3-plan.md)
+- Phase 4 checklist: [docs/phase-4-execution-checklist.md](./docs/phase-4-execution-checklist.md)
+- Phase 5 checklist: [docs/phase-5-execution-checklist.md](./docs/phase-5-execution-checklist.md)
+- AI extraction module: [docs/modules/ai-extraction.md](./docs/modules/ai-extraction.md)
 - Production way forward: [docs/production-way-forward.md](./docs/production-way-forward.md)
 

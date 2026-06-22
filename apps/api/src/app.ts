@@ -4,6 +4,7 @@ import express from "express";
 import helmet from "helmet";
 
 import { toApiError } from "./lib/http.js";
+import { aiRouter } from "./modules/ai/ai.routes.js";
 import { auditRouter } from "./modules/audit/audit.routes.js";
 import { catalogRouter } from "./modules/catalog/catalog.routes.js";
 import { contractsRouter } from "./modules/contracts/contracts.routes.js";
@@ -42,6 +43,7 @@ export function createApp() {
   app.use("/usage", usageRouter);
   app.use("/invoices", invoicesRouter);
   app.use("/audit", auditRouter);
+  app.use("/ai", aiRouter);
   app.use("/ops", opsRouter);
   app.use("/revenue", revrecRouter);
   app.use(errorHandler);

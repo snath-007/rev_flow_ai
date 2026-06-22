@@ -54,6 +54,23 @@ export async function getCustomerById(id: string) {
   }
 }
 
+
+export async function findCustomerByEmail(email: string) {
+  const sql = createSqlClient();
+
+  try {
+    const rows = await sql<CustomerRow[]>`
+      select id, name, email, billing_address, created_at, updated_at
+      from customers
+      where lower(email) = lower(${email})
+      limit 1
+    `;
+
+    return rows[0] ? toCustomer(rows[0]) : null;
+  } finally {
+    await sql.end({ timeout: 5 });
+  }
+}
 export async function createCustomer(input: CreateCustomerInput) {
   const sql = createSqlClient();
 
