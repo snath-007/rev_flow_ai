@@ -11,6 +11,10 @@ export async function getCustomerById(id: string) {
   return customersRepository.getCustomerById(id);
 }
 
+export async function findCustomerByEmail(email: string) {
+  return customersRepository.findCustomerByEmail(email);
+}
+
 export async function createCustomer(input: CreateCustomerInput) {
   const customer = await customersRepository.createCustomer(input);
 

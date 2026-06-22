@@ -1,9 +1,11 @@
 import type {
   AddContractLineItemInput,
   AggregateUsageInput,
+  AiExtractionRun,
   AuditLog,
   Contract,
   ContractSummary,
+  CreateAiExtractionInput,
   CreateContractInput,
   CreateCustomerInput,
   CreateMeterInput,
@@ -21,6 +23,7 @@ import type {
   PriceRule,
   Product,
   RevenueSchedule,
+  ReviewAiExtractionInput,
   UsageAggregate,
   UsageEvent
 } from "@revflow/shared";
@@ -228,5 +231,36 @@ export async function generateRevenueSchedules(invoiceId: string) {
   }>("/revenue/schedules/generate", {
     method: "POST",
     body: JSON.stringify({ invoiceId })
+  });
+}
+export async function listAiExtractions() {
+  const data = await request<{ extractions: AiExtractionRun[] }>("/ai/extractions");
+  return data.extractions;
+}
+
+export async function createAiExtraction(input: CreateAiExtractionInput) {
+  const data = await request<{ extraction: AiExtractionRun }>("/ai/extractions", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+
+  return data.extraction;
+}
+
+export async function reviewAiExtraction(extractionId: string, input: ReviewAiExtractionInput) {
+  return request<{ run: AiExtractionRun; review: unknown }>(`/ai/extractions/${extractionId}/review`, {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export async function applyAiExtraction(extractionId: string) {
+  return request<{
+    extraction: AiExtractionRun;
+    customer: Customer;
+    customerCreated: boolean;
+    contract: Contract;
+  }>(`/ai/extractions/${extractionId}/apply`, {
+    method: "POST"
   });
 }

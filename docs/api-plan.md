@@ -13,9 +13,11 @@
 ### Contract Extraction
 
 ```txt
-POST /contracts/extractions
-GET  /contracts/extractions/:id
-POST /contracts/extractions/:id/apply
+GET  /ai/extractions
+POST /ai/extractions
+GET  /ai/extractions/:id
+POST /ai/extractions/:id/review
+POST /ai/extractions/:id/apply
 ```
 
 ### Contracts

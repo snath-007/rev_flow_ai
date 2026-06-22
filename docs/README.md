@@ -2,7 +2,7 @@
 
 This folder contains the planning and design documents for RevFlow.
 
-The project now has a working Phase 1 through Phase 4 implementation. These documents are living planning artifacts: some describe implemented behavior, while later-phase documents describe the intended direction.
+The project now has a working Phase 1 through Phase 5 implementation. These documents are living planning artifacts: some describe implemented behavior, while later-phase documents describe the intended direction.
 
 ## Document Map
 
@@ -19,6 +19,7 @@ The project now has a working Phase 1 through Phase 4 implementation. These docu
 | [Phase 3 Execution Checklist](./phase-3-execution-checklist.md) | Task-by-task implementation checklist for Phase 3 |
 | [Phase 4 Execution Checklist](./phase-4-execution-checklist.md) | Task-by-task implementation checklist for revenue recognition |
 | [Phase 5 Execution Checklist](./phase-5-execution-checklist.md) | Task-by-task implementation checklist for AI-assisted extraction and review |
+| [Demo Script](./phase-2-demo-script.md) | End-to-end walkthrough through AI review, billing, revenue, audit, and ops |
 | [Production Way Forward](./production-way-forward.md) | Monorepo decision, production decomposition, and scalability notes |
 | [Local Development](./local-development.md) | Setup commands, ports, and local service notes |
 | [Interview Prep](./interview-prep.md) | HLD, LLD, DSA, and product-engineering talking points |
@@ -33,7 +34,7 @@ The project now has a working Phase 1 through Phase 4 implementation. These docu
 | [Metering](./modules/metering.md) | Usage ingestion, idempotency, aggregation, and event visibility |
 | [Invoicing](./modules/invoicing.md) | Draft invoices, lifecycle states, line items, adjustments |
 | [Revenue Recognition](./modules/revrec.md) | ASC 606-lite schedules, earned/deferred revenue, journal entries |
-| [AI Extraction](./modules/ai-extraction.md) | Contract text extraction, confidence, review, and activation |
+| [AI Extraction](./modules/ai-extraction.md) | Contract text extraction, confidence, human review, and apply-to-draft controls |
 | [Audit And Ops](./modules/audit-ops.md) | Audit logs, job runs, operational debugging views |
 
 

@@ -81,30 +81,47 @@ Simplifications kept deliberately:
 
 Checklist: [Phase 4 Execution Checklist](./phase-4-execution-checklist.md)
 
-## Phase 5 - AI Agent Layer
+## Phase 5 - AI-Assisted Contract Extraction
 
-Status: planned.
+Status: complete.
 
-Goal: add AI where it is genuinely valuable and keep deterministic finance math in code.
+Goal: convert unstructured commercial text into traceable, human-reviewed draft configuration without giving AI control of financial calculations or activation.
 
-- Contract text/PDF extraction into draft config
-- Ambiguity detection and confidence markers
-- Human review before applying extracted terms
+- Persisted AI extraction runs and review history
+- Shared structured extraction schemas
+- Provider-neutral adapter interface
+- Deterministic mock provider
+- Opt-in local Ollama provider
+- Confidence, ambiguity, missing-field, and source-snippet visibility
+- `/ai` review workspace with accept, edit, and reject decisions
+- Extraction approval/rejection and conservative apply workflow
+- Customer match/create plus draft contract creation
+- AI lifecycle audit events
+- Provider/model/prompt metadata and persisted failures
+
+Deliberately deferred:
+
+- PDF/OCR and multi-document reconciliation
+- Autonomous contract or billing activation
 - Invoice anomaly detection
-- Natural-language Q&A over billing/revenue data
-- Dunning email draft generation with human review
+- Natural-language finance Q&A
+- Dunning communication assistance
 
-## Phase 6 - Reporting, Integrations, And Portfolio Polish
+Checklist: [Phase 5 Execution Checklist](./phase-5-execution-checklist.md)
+Module notes: [AI-Assisted Contract Extraction](./modules/ai-extraction.md)
+
+## Phase 6 - Productization, Reporting, And Deployment
 
 Status: planned.
 
-Goal: make the project easy to understand, demo, and discuss as a production architecture.
+Goal: turn the functional POC into a coherent, access-controlled, deployable product demonstration.
 
-- MRR, ARR, NRR, revenue waterfall, and DSO dashboards
-- Payment and reconciliation simulation
+- Unified navigation, responsive UI, and standardized interaction patterns
+- Authentication and systematic customer/tenant onboarding
+- Role-based access control and tenant-aware data ownership
+- MRR, ARR, NRR, revenue waterfall, AR, and DSO dashboards
+- Payment receipt and reconciliation simulation
 - ERP/CRM export stubs
-- Architecture diagrams
-- HLD write-up
-- LLD write-up for pricing engine, invoice lifecycle, and revenue recognition
-- Production tradeoff notes
-- Screenshots and demo video
+- Hosted deployment design for frontend, API, worker, Postgres, Redis, and AI
+- Security, observability, backups, scaling, and production tradeoff notes
+- Architecture diagrams, screenshots, and polished demo flow
