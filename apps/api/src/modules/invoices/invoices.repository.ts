@@ -17,6 +17,10 @@ type InvoiceRow = {
   currency: string;
   subtotal: string;
   total: string;
+  amount_paid: string | number | null;
+  balance_due: string | number | null;
+  overpaid_amount: string | number | null;
+  payment_status: "unpaid" | "partial" | "paid" | "overpaid" | null;
   calculation_snapshot: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
@@ -66,6 +70,12 @@ function formatDate(value: DateLike) {
 }
 
 function toInvoice(row: InvoiceRow, lineItems?: ReturnType<typeof toInvoiceLineItem>[]) {
+  const total = Number(row.total);
+  const amountPaid = Number(row.amount_paid ?? 0);
+  const balanceDue = Number(row.balance_due ?? Math.max(total - amountPaid, 0));
+  const overpaidAmount = Number(row.overpaid_amount ?? Math.max(amountPaid - total, 0));
+  const paymentStatus = row.payment_status ?? (overpaidAmount > 0 ? "overpaid" : balanceDue <= 0 && total > 0 ? "paid" : amountPaid > 0 ? "partial" : "unpaid");
+
   return {
     id: row.id,
     customerId: row.customer_id,
@@ -76,7 +86,11 @@ function toInvoice(row: InvoiceRow, lineItems?: ReturnType<typeof toInvoiceLineI
     periodEnd: formatDate(row.period_end),
     currency: row.currency,
     subtotal: Number(row.subtotal),
-    total: Number(row.total),
+    total,
+    amountPaid,
+    balanceDue,
+    overpaidAmount,
+    paymentStatus,
     calculationSnapshot: row.calculation_snapshot,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
@@ -129,11 +143,29 @@ export async function listInvoices() {
         i.currency,
         i.subtotal,
         i.total,
+        coalesce(payment_totals.amount_paid, 0) as amount_paid,
+        greatest(i.total - coalesce(payment_totals.amount_paid, 0), 0) as balance_due,
+        greatest(coalesce(payment_totals.amount_paid, 0) - i.total, 0) as overpaid_amount,
+        case
+          when coalesce(payment_totals.amount_paid, 0) > i.total then 'overpaid'
+          when i.total > 0 and coalesce(payment_totals.amount_paid, 0) >= i.total then 'paid'
+          when coalesce(payment_totals.amount_paid, 0) > 0 then 'partial'
+          else 'unpaid'
+        end as payment_status,
         i.calculation_snapshot,
         i.created_at,
         i.updated_at
       from invoices i
       join customers c on c.id = i.customer_id
+      left join lateral (
+        select coalesce(sum(pa.amount), 0) as amount_paid
+        from payment_allocations pa
+        join payments p on p.id = pa.payment_id
+          and p.workspace_id = pa.workspace_id
+        where pa.workspace_id = i.workspace_id
+          and pa.invoice_id = i.id
+          and p.status = 'received'
+      ) payment_totals on true
       where i.workspace_id = ${workspaceId}
       order by i.created_at desc
     `;
@@ -161,11 +193,29 @@ export async function getInvoiceById(id: string) {
         i.currency,
         i.subtotal,
         i.total,
+        coalesce(payment_totals.amount_paid, 0) as amount_paid,
+        greatest(i.total - coalesce(payment_totals.amount_paid, 0), 0) as balance_due,
+        greatest(coalesce(payment_totals.amount_paid, 0) - i.total, 0) as overpaid_amount,
+        case
+          when coalesce(payment_totals.amount_paid, 0) > i.total then 'overpaid'
+          when i.total > 0 and coalesce(payment_totals.amount_paid, 0) >= i.total then 'paid'
+          when coalesce(payment_totals.amount_paid, 0) > 0 then 'partial'
+          else 'unpaid'
+        end as payment_status,
         i.calculation_snapshot,
         i.created_at,
         i.updated_at
       from invoices i
       join customers c on c.id = i.customer_id
+      left join lateral (
+        select coalesce(sum(pa.amount), 0) as amount_paid
+        from payment_allocations pa
+        join payments p on p.id = pa.payment_id
+          and p.workspace_id = pa.workspace_id
+        where pa.workspace_id = i.workspace_id
+          and pa.invoice_id = i.id
+          and p.status = 'received'
+      ) payment_totals on true
       where i.workspace_id = ${workspaceId}
         and i.id = ${id}
       limit 1
@@ -309,7 +359,7 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
           ${subtotal},
           ${tx.json({ generatedFrom: "usage_aggregates_with_raw_event_fallback", lineCount: lineItems.length } as never)}
         )
-        returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, calculation_snapshot, created_at, updated_at
+        returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, 0::numeric as amount_paid, total as balance_due, 0::numeric as overpaid_amount, 'unpaid'::text as payment_status, calculation_snapshot, created_at, updated_at
       `;
       const invoice = invoiceRows[0];
 
@@ -363,7 +413,7 @@ export async function approveInvoice(id: string) {
       where workspace_id = ${workspaceId}
         and id = ${id}
         and status = 'draft'
-      returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, calculation_snapshot, created_at, updated_at
+      returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, 0::numeric as amount_paid, total as balance_due, 0::numeric as overpaid_amount, 'unpaid'::text as payment_status, calculation_snapshot, created_at, updated_at
     `;
 
     return rows[0] ? toInvoice(rows[0]) : null;

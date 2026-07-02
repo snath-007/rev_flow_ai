@@ -14,6 +14,7 @@ import { contractsRouter } from "./modules/contracts/contracts.routes.js";
 import { customersRouter } from "./modules/customers/customers.routes.js";
 import { invoicesRouter } from "./modules/invoices/invoices.routes.js";
 import { opsRouter } from "./modules/ops/ops.routes.js";
+import { paymentsRouter } from "./modules/payments/payments.routes.js";
 import { revrecRouter } from "./modules/revrec/revrec.routes.js";
 import { usageRouter } from "./modules/usage/usage.routes.js";
 import { healthRouter } from "./routes/health.js";
@@ -49,6 +50,7 @@ export function createApp() {
   app.use("/contracts", contractsRouter);
   app.use("/usage", usageRouter);
   app.use("/invoices", invoicesRouter);
+  app.use("/payments", paymentsRouter);
   app.use("/audit", auditRouter);
   app.use("/ai", aiRouter);
   app.use("/ops", opsRouter);

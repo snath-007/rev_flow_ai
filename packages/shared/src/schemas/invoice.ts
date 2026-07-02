@@ -9,6 +9,8 @@ export const invoiceStatusSchema = z.enum([
   "credited"
 ]);
 
+export const invoicePaymentStatusSchema = z.enum(["unpaid", "partial", "paid", "overpaid"]);
+
 export const invoiceLineItemSchema = z.object({
   id: z.string().uuid(),
   invoiceId: z.string().uuid(),
@@ -34,6 +36,10 @@ export const invoiceSchema = z.object({
   currency: z.string(),
   subtotal: z.number().nonnegative(),
   total: z.number().nonnegative(),
+  amountPaid: z.number().nonnegative(),
+  balanceDue: z.number().nonnegative(),
+  overpaidAmount: z.number().nonnegative(),
+  paymentStatus: invoicePaymentStatusSchema,
   calculationSnapshot: z.record(z.string(), z.unknown()),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -50,3 +56,4 @@ export type GenerateInvoiceInput = z.output<typeof generateInvoiceSchema>;
 export type Invoice = z.infer<typeof invoiceSchema>;
 export type InvoiceLineItem = z.infer<typeof invoiceLineItemSchema>;
 export type InvoiceStatus = z.infer<typeof invoiceStatusSchema>;
+export type InvoicePaymentStatus = z.infer<typeof invoicePaymentStatusSchema>;

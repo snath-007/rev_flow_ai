@@ -556,7 +556,9 @@ Estimated effort: 6-10 hours.
 
 ## Milestone 8 - Payment And Reconciliation Simulation
 
-Status: pending.
+Status: complete.
+
+Implementation note: added workspace-scoped payments and payment allocations, manual receipt recording, deterministic single-invoice allocation, partial/exact/overpayment visibility, invoice paid/balance read-model fields, payment-driven invoice status updates, payment audit events, a payments workspace page, and payment navigation/API boundaries. Verification completed with shared/API/web typechecks, API tests, and web production build.
 
 Goal: complete the POC order-to-cash loop without integrating a real payment processor.
 

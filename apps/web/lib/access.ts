@@ -37,7 +37,8 @@ export const navigationGroups: NavigationGroup[] = [
     label: "Operate",
     items: [
       { href: "/usage", label: "Usage", capability: "usage.read" },
-      { href: "/invoices", label: "Invoices", capability: "invoices.read" }
+      { href: "/invoices", label: "Invoices", capability: "invoices.read" },
+      { href: "/payments", label: "Payments", capability: "payments.read" }
     ]
   },
   {

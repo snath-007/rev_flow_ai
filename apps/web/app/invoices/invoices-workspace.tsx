@@ -96,7 +96,7 @@ export function InvoicesWorkspace({ canGenerate, canApprove, contracts, invoices
   }
 
   function exportInvoices() {
-    downloadCsv("revflow-invoices.csv", [["Customer", "Status", "Period start", "Period end", "Currency", "Subtotal", "Total", "Line items", "Created"], ...filtered.map((invoice) => [invoice.customerName ?? invoice.customerId, invoice.status, invoice.periodStart, invoice.periodEnd, invoice.currency, invoice.subtotal, invoice.total, invoice.lineItems?.length ?? 0, invoice.createdAt])]);
+    downloadCsv("revflow-invoices.csv", [["Customer", "Status", "Payment status", "Period start", "Period end", "Currency", "Subtotal", "Total", "Paid", "Balance", "Line items", "Created"], ...filtered.map((invoice) => [invoice.customerName ?? invoice.customerId, invoice.status, invoice.paymentStatus, invoice.periodStart, invoice.periodEnd, invoice.currency, invoice.subtotal, invoice.total, invoice.amountPaid, invoice.balanceDue, invoice.lineItems?.length ?? 0, invoice.createdAt])]);
   }
 
   async function submitAction(event: FormEvent<HTMLFormElement>) {
@@ -226,7 +226,7 @@ export function InvoicesWorkspace({ canGenerate, canApprove, contracts, invoices
 }
 
 function InvoicesTable({ invoices }: { invoices: Invoice[] }) {
-  return <div className="data-table-scroll"><table><thead><tr><th>Customer</th><th>Status</th><th>Period</th><th>Total</th><th>Lines</th><th>Detail</th><th>Next</th></tr></thead><tbody>{invoices.map((invoice) => <tr key={invoice.id}><td><strong>{invoice.customerName ?? invoice.customerId}</strong></td><td><span className={`status-badge status-${invoice.status}`}>{invoice.status}</span></td><td>{formatDate(invoice.periodStart)} - {formatDate(invoice.periodEnd)}</td><td>{formatCurrency(invoice.currency, invoice.total)}</td><td>{invoice.lineItems?.length ?? 0}</td><td><a href={`/invoices/${invoice.id}`}>View</a></td><td>{invoice.status === "approved" ? <a href="/revenue">Generate revenue</a> : invoice.status === "draft" ? "Approve draft" : <span className="muted-text">Closed</span>}</td></tr>)}</tbody></table></div>;
+  return <div className="data-table-scroll"><table><thead><tr><th>Customer</th><th>Status</th><th>Payment</th><th>Period</th><th>Total</th><th>Paid</th><th>Balance</th><th>Detail</th><th>Next</th></tr></thead><tbody>{invoices.map((invoice) => <tr key={invoice.id}><td><strong>{invoice.customerName ?? invoice.customerId}</strong></td><td><span className={`status-badge status-${invoice.status}`}>{invoice.status}</span></td><td><span className={`status-badge status-${invoice.paymentStatus}`}>{invoice.paymentStatus}</span></td><td>{formatDate(invoice.periodStart)} - {formatDate(invoice.periodEnd)}</td><td>{formatCurrency(invoice.currency, invoice.total)}</td><td>{formatCurrency(invoice.currency, invoice.amountPaid)}</td><td>{formatCurrency(invoice.currency, invoice.balanceDue)}</td><td><a href={`/invoices/${invoice.id}`}>View</a></td><td>{invoice.balanceDue > 0 && ["approved", "issued"].includes(invoice.status) ? <a href="/payments">Record payment</a> : invoice.status === "approved" ? <a href="/revenue">Generate revenue</a> : invoice.status === "draft" ? "Approve draft" : <span className="muted-text">Closed</span>}</td></tr>)}</tbody></table></div>;
 }
 
 function GenerateFields({ activeContracts, defaults }: { activeContracts: ContractSummary[]; defaults: { start: string; end: string } }) {

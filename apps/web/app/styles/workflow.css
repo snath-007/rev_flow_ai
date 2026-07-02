@@ -1358,3 +1358,105 @@ button:disabled.data-primary-action {
     grid-template-columns: 1fr;
   }
 }
+
+.payments-workspace-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.payments-insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) minmax(0, 0.8fr);
+  gap: 12px;
+}
+
+.payments-insight-card {
+  min-height: 142px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 253, 247, 0.84);
+  box-shadow: var(--shadow-soft);
+  padding: 18px;
+}
+
+.payments-insight-card > strong {
+  display: block;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1;
+  margin: 12px 0 8px;
+}
+
+.payments-insight-card > span,
+.payments-insight-card > small {
+  color: var(--navy-soft);
+  line-height: 1.6;
+}
+
+.payments-split-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.payments-split-bar {
+  display: flex;
+  height: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(27, 51, 75, 0.16);
+  background: rgba(201, 109, 64, 0.1);
+}
+
+.payments-split-bar i,
+.payments-split-bar b {
+  display: block;
+  height: 100%;
+}
+
+.payments-split-bar i {
+  background: repeating-linear-gradient(135deg, var(--teal) 0 6px, var(--sketch-blue, var(--blue)) 6px 10px);
+}
+
+.payments-split-bar b {
+  background: repeating-linear-gradient(135deg, var(--terracotta) 0 6px, var(--amber) 6px 10px);
+}
+
+.payments-toolbar-actions {
+  flex-wrap: wrap;
+  row-gap: 12px;
+}
+
+.payments-workspace .data-search {
+  min-width: min(310px, 100%);
+}
+
+.payments-table-scroll {
+  max-height: 500px;
+}
+
+.status-unapplied,
+.status-overpayment {
+  border-color: rgba(201, 109, 64, 0.55);
+  background: #fff3dc;
+  color: #8a3e20;
+}
+
+.status-partial {
+  border-color: rgba(35, 104, 153, 0.42);
+  background: #e8f2f8;
+  color: var(--blue);
+}
+
+.status-applied,
+.status-paid {
+  border-color: var(--teal-soft);
+  background: var(--teal-wash);
+  color: var(--teal);
+}
+
+@media (max-width: 1100px) {
+  .payments-insight-grid {
+    grid-template-columns: 1fr;
+  }
+}

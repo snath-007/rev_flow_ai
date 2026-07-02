@@ -21,6 +21,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         <section className="evidence-strip" aria-label="Invoice evidence">
           <div><span>Status</span><strong>{invoice.status}</strong></div>
           <div><span>Total</span><strong>{invoice.currency} {invoice.total.toFixed(2)}</strong></div>
+          <div><span>Paid</span><strong>{invoice.currency} {invoice.amountPaid.toFixed(2)}</strong></div>
+          <div><span>Balance</span><strong>{invoice.currency} {invoice.balanceDue.toFixed(2)}</strong></div>
+          <div><span>Payment</span><strong>{invoice.paymentStatus}</strong></div>
           <div><span>Line items</span><strong>{lineItems.length}</strong></div>
         </section>
 
@@ -36,7 +39,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <pre className="code-block">{JSON.stringify(invoice.calculationSnapshot, null, 2)}</pre>
         </section>
 
-        {invoice.status === "approved" ? <NextAction href="/revenue" title="Next: revenue recognition">Generate revenue schedules from this approved invoice.</NextAction> : <NextAction href="/invoices" title="Next: approve invoice">Return to invoices and approve this draft when ready.</NextAction>}
+        {invoice.balanceDue > 0 && ["approved", "issued"].includes(invoice.status) ? <NextAction href="/payments" title="Next: record payment">Record cash receipt and reconciliation evidence for this invoice.</NextAction> : invoice.status === "approved" ? <NextAction href="/revenue" title="Next: revenue recognition">Generate revenue schedules from this approved invoice.</NextAction> : <NextAction href="/invoices" title="Next: approve invoice">Return to invoices and approve this draft when ready.</NextAction>}
       </main>
     </WorkspaceShell>
   );

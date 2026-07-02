@@ -7,6 +7,7 @@ export * from "./schemas/audit.js";
 export * from "./schemas/customer.js";
 export * from "./schemas/contract.js";
 export * from "./schemas/invoice.js";
+export * from "./schemas/payment.js";
 export * from "./schemas/usage.js";
 export * from "./schemas/ops.js";
 export * from "./schemas/revrec.js";

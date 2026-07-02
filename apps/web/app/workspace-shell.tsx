@@ -13,6 +13,7 @@ const iconByHref: Record<string, string> = {
   "/ai": "M8 8h8a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-4a3 3 0 0 1 3-3z M9 13h.01 M15 13h.01 M12 8V5 M9 18v3 M15 18v3",
   "/usage": "M4 18h16 M6 15l3-4 4 2 5-7 M6 6h.01 M18 18h.01",
   "/invoices": "M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6 M9 16h4",
+  "/payments": "M4 7h16v10H4z M4 10h16 M7 15h4 M15 15h2",
   "/revenue": "M4 19h16 M7 16v-5 M12 16V6 M17 16v-8 M5 9l7-5 7 5",
   "/audit": "M12 3l7 3v5c0 4.5-2.8 8.4-7 10-4.2-1.6-7-5.5-7-10V6z M9 12l2 2 4-5",
   "/ops": "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 2v3 M12 19v3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M2 12h3 M19 12h3 M4.9 19.1 7 17 M17 7l2.1-2.1"
@@ -26,6 +27,7 @@ const navDetailByHref: Record<string, string> = {
   "/ai": "Contract extraction",
   "/usage": "Metered events",
   "/invoices": "Draft billing",
+  "/payments": "Cash receipts",
   "/revenue": "Schedules and journals",
   "/audit": "Actor evidence",
   "/ops": "Job health"

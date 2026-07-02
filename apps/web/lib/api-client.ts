@@ -25,9 +25,11 @@ import type {
   JournalEntry,
   Meter,
   OnboardWorkspaceInput,
+  Payment,
   Plan,
   PriceRule,
   Product,
+  ReceivePaymentInput,
   RevenueSchedule,
   ReviewAiExtractionInput,
   UsageAggregate,
@@ -231,6 +233,20 @@ export async function approveInvoice(invoiceId: string) {
   });
 
   return data.invoice;
+}
+
+export async function listPayments() {
+  const data = await request<{ payments: Payment[] }>("/payments");
+  return data.payments;
+}
+
+export async function receivePayment(input: ReceivePaymentInput) {
+  const data = await request<{ payment: Payment }>("/payments", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+
+  return data.payment;
 }
 
 export async function listAuditLogs() {
