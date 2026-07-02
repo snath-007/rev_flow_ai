@@ -590,7 +590,9 @@ Estimated effort: 6-10 hours.
 
 ## Milestone 9 - Tenant-Aware Reporting
 
-Status: pending.
+Status: complete.
+
+Implementation note: 9A added invoice issued/due reporting dates, default POC Net 30 issuance on approval, shared report response metadata, a reports API foundation with tenant-scoped overview KPIs, reports navigation, and the first workspace reports dashboard. 9B added the tenant-scoped revenue waterfall endpoint and Reports page visualization from persisted generated/posted revenue schedules. 9C added AR aging and POC DSO endpoints plus Reports page receivables visuals using issued_at, due_at, and payment applications. 9D added committed MRR/ARR reporting from active flat recurring contract lines, with usage-priced lines explicitly excluded and visible.
 
 Goal: add deterministic finance summaries using explicit read models.
 

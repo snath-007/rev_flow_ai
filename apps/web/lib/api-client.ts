@@ -7,6 +7,7 @@ import type {
   AuthenticationContext,
   AggregateUsageInput,
   AiExtractionRun,
+  ArAgingReport,
   AuditLog,
   Contract,
   ContractSummary,
@@ -18,6 +19,7 @@ import type {
   CreatePriceRuleInput,
   CreateProductInput,
   Customer,
+  DsoReport,
   GenerateInvoiceInput,
   IngestUsageEventInput,
   Invoice,
@@ -30,7 +32,10 @@ import type {
   PriceRule,
   Product,
   ReceivePaymentInput,
+  RecurringRevenueReport,
+  ReportOverview,
   RevenueSchedule,
+  RevenueWaterfallReport,
   ReviewAiExtractionInput,
   UsageAggregate,
   UsageEvent
@@ -249,6 +254,27 @@ export async function receivePayment(input: ReceivePaymentInput) {
   return data.payment;
 }
 
+export async function getReportOverview() {
+  const data = await request<{ report: ReportOverview }>("/reports/overview");
+  return data.report;
+}
+export async function getRevenueWaterfallReport() {
+  const data = await request<{ report: RevenueWaterfallReport }>("/reports/revenue-waterfall");
+  return data.report;
+}
+export async function getArAgingReport() {
+  const data = await request<{ report: ArAgingReport }>("/reports/ar-aging");
+  return data.report;
+}
+
+export async function getDsoReport() {
+  const data = await request<{ report: DsoReport }>("/reports/dso");
+  return data.report;
+}
+export async function getRecurringRevenueReport() {
+  const data = await request<{ report: RecurringRevenueReport }>("/reports/mrr");
+  return data.report;
+}
 export async function listAuditLogs() {
   const data = await request<{ auditLogs: AuditLog[] }>("/audit");
   return data.auditLogs;

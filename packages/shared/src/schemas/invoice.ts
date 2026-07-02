@@ -33,6 +33,8 @@ export const invoiceSchema = z.object({
   status: invoiceStatusSchema,
   periodStart: z.string(),
   periodEnd: z.string(),
+  issuedAt: z.string().nullable(),
+  dueAt: z.string().nullable(),
   currency: z.string(),
   subtotal: z.number().nonnegative(),
   total: z.number().nonnegative(),

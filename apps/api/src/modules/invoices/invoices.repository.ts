@@ -14,6 +14,8 @@ type InvoiceRow = {
   status: "draft" | "approved" | "issued" | "paid" | "void" | "credited";
   period_start: DateLike;
   period_end: DateLike;
+  issued_at: Date | null;
+  due_at: Date | null;
   currency: string;
   subtotal: string;
   total: string;
@@ -84,6 +86,8 @@ function toInvoice(row: InvoiceRow, lineItems?: ReturnType<typeof toInvoiceLineI
     status: row.status,
     periodStart: formatDate(row.period_start),
     periodEnd: formatDate(row.period_end),
+    issuedAt: row.issued_at ? row.issued_at.toISOString() : null,
+    dueAt: row.due_at ? row.due_at.toISOString() : null,
     currency: row.currency,
     subtotal: Number(row.subtotal),
     total,
@@ -140,6 +144,8 @@ export async function listInvoices() {
         i.status,
         i.period_start,
         i.period_end,
+        i.issued_at,
+        i.due_at,
         i.currency,
         i.subtotal,
         i.total,
@@ -190,6 +196,8 @@ export async function getInvoiceById(id: string) {
         i.status,
         i.period_start,
         i.period_end,
+        i.issued_at,
+        i.due_at,
         i.currency,
         i.subtotal,
         i.total,
@@ -359,7 +367,7 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
           ${subtotal},
           ${tx.json({ generatedFrom: "usage_aggregates_with_raw_event_fallback", lineCount: lineItems.length } as never)}
         )
-        returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, 0::numeric as amount_paid, total as balance_due, 0::numeric as overpaid_amount, 'unpaid'::text as payment_status, calculation_snapshot, created_at, updated_at
+        returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, issued_at, due_at, currency, subtotal, total, 0::numeric as amount_paid, total as balance_due, 0::numeric as overpaid_amount, 'unpaid'::text as payment_status, calculation_snapshot, created_at, updated_at
       `;
       const invoice = invoiceRows[0];
 
@@ -409,11 +417,11 @@ export async function approveInvoice(id: string) {
   try {
     const rows = await sql<InvoiceRow[]>`
       update invoices
-      set status = 'approved', updated_at = now()
+      set status = 'approved', issued_at = coalesce(issued_at, now()), due_at = coalesce(due_at, now() + interval '30 days'), updated_at = now()
       where workspace_id = ${workspaceId}
         and id = ${id}
         and status = 'draft'
-      returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, 0::numeric as amount_paid, total as balance_due, 0::numeric as overpaid_amount, 'unpaid'::text as payment_status, calculation_snapshot, created_at, updated_at
+      returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, issued_at, due_at, currency, subtotal, total, 0::numeric as amount_paid, total as balance_due, 0::numeric as overpaid_amount, 'unpaid'::text as payment_status, calculation_snapshot, created_at, updated_at
     `;
 
     return rows[0] ? toInvoice(rows[0]) : null;

@@ -43,7 +43,7 @@ export const navigationGroups: NavigationGroup[] = [
   },
   {
     label: "Recognize",
-    items: [{ href: "/revenue", label: "Revenue", capability: "revenue.read" }]
+    items: [{ href: "/revenue", label: "Revenue", capability: "revenue.read" }, { href: "/reports", label: "Reports", capability: "reports.read" }]
   },
   {
     label: "Control",
