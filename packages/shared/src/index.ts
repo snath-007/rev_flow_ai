@@ -1,3 +1,4 @@
+export * from "./schemas/auth.js";
 export * from "./schemas/price-rule.js";
 export * from "./schemas/plan.js";
 export * from "./schemas/meter.js";

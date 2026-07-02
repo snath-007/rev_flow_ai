@@ -1,6 +1,8 @@
-﻿import { createSqlClient } from "@revflow/db";
+import { createSqlClient } from "@revflow/db";
 
 type CreateJobRunInput = {
+  workspaceId: string;
+  initiatedByExternalUserId: string;
   queueName: string;
   jobName: string;
   jobId: string | null;
@@ -12,8 +14,8 @@ export async function createJobRun(input: CreateJobRunInput) {
 
   try {
     const rows = await sql<{ id: string }[]>`
-      insert into job_runs (queue_name, job_name, job_id, status, payload, started_at)
-      values (${input.queueName}, ${input.jobName}, ${input.jobId}, 'running', ${sql.json(input.payload as never)}, now())
+      insert into job_runs (workspace_id, queue_name, job_name, job_id, status, payload, started_at, initiated_by_external_user_id)
+      values (${input.workspaceId}, ${input.queueName}, ${input.jobName}, ${input.jobId}, 'running', ${sql.json(input.payload as never)}, now(), ${input.initiatedByExternalUserId})
       returning id
     `;
 
@@ -29,7 +31,7 @@ export async function createJobRun(input: CreateJobRunInput) {
   }
 }
 
-export async function markJobRunSucceeded(id: string, result: unknown) {
+export async function markJobRunSucceeded(workspaceId: string, id: string, result: unknown) {
   const sql = createSqlClient();
 
   try {
@@ -39,14 +41,15 @@ export async function markJobRunSucceeded(id: string, result: unknown) {
           result = ${sql.json(result as never)},
           finished_at = now(),
           updated_at = now()
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
     `;
   } finally {
     await sql.end({ timeout: 5 });
   }
 }
 
-export async function markJobRunFailed(id: string, error: unknown) {
+export async function markJobRunFailed(workspaceId: string, id: string, error: unknown) {
   const sql = createSqlClient();
   const message = error instanceof Error ? error.message : String(error);
 
@@ -57,7 +60,8 @@ export async function markJobRunFailed(id: string, error: unknown) {
           error_message = ${message},
           finished_at = now(),
           updated_at = now()
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
     `;
   } finally {
     await sql.end({ timeout: 5 });

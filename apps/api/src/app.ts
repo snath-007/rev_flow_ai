@@ -4,6 +4,9 @@ import express from "express";
 import helmet from "helmet";
 
 import { toApiError } from "./lib/http.js";
+import { bindAuthenticatedActorContext } from "./lib/request-context.js";
+import { createIdentityMiddleware, createRequireAuthenticatedActor } from "./modules/auth/auth.middleware.js";
+import { authRouter } from "./modules/auth/auth.routes.js";
 import { aiRouter } from "./modules/ai/ai.routes.js";
 import { auditRouter } from "./modules/audit/audit.routes.js";
 import { catalogRouter } from "./modules/catalog/catalog.routes.js";
@@ -37,6 +40,10 @@ export function createApp() {
   app.use(express.json({ limit: "1mb" }));
 
   app.use("/health", healthRouter);
+  app.use(...createIdentityMiddleware());
+  app.use("/auth", authRouter);
+  app.use(createRequireAuthenticatedActor());
+  app.use(bindAuthenticatedActorContext());
   app.use("/customers", customersRouter);
   app.use("/catalog", catalogRouter);
   app.use("/contracts", contractsRouter);

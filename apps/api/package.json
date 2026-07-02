@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@clerk/express": "^2.1.31",
     "@revflow/db": "0.1.0",
     "@revflow/queues": "0.1.0",
     "@revflow/shared": "0.1.0",

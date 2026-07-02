@@ -19,6 +19,16 @@ The project now has a working Phase 1 through Phase 5 implementation. These docu
 | [Phase 3 Execution Checklist](./phase-3-execution-checklist.md) | Task-by-task implementation checklist for Phase 3 |
 | [Phase 4 Execution Checklist](./phase-4-execution-checklist.md) | Task-by-task implementation checklist for revenue recognition |
 | [Phase 5 Execution Checklist](./phase-5-execution-checklist.md) | Task-by-task implementation checklist for AI-assisted extraction and review |
+| [Phase 6 Execution Checklist](./phase-6-execution-checklist.md) | Product experience, identity, tenancy, RBAC, reporting, and deployment plan |
+| [Phase 6 Baseline Inventory](./phase-6-baseline-inventory.md) | Milestone 0 verification, permission surfaces, tenant ownership, and baseline risks |
+| [ADR 0001 - Identity And Session Boundary](./adr/0001-identity-and-session-boundary.md) | Clerk identity, application-authoritative membership, and normalized actor decision |
+| [ADR 0002 - Workspace Tenancy And Ownership](./adr/0002-workspace-tenancy-and-ownership.md) | Shared-schema workspace isolation, ownership, and migration decision |
+| [ADR 0003 - Hosted Demo Topology](./adr/0003-hosted-demo-topology.md) | Split Vercel web, container API, managed Postgres, and optional worker topology |
+| [ADR 0004 - AI Hosting And Provider Policy](./adr/0004-ai-hosting-and-provider-policy.md) | Mock-first hosted AI with local Ollama and provider-neutral expansion |
+| [Phase 6 RBAC And Actor Contract](./phase-6-rbac-and-actor-contract.md) | Fixed-role capability matrix, route policy, and audit actor contract |
+| [Phase 6 Metric Definitions](./phase-6-metric-definitions.md) | Deterministic MRR, ARR, revenue waterfall, AR aging, DSO, and NRR boundaries |
+| [Phase 6 Product Experience Blueprint](./phase-6-product-experience-blueprint.md) | Public/product boundary, navigation, role journeys, visual direction, and UX rules |
+| [Zenskar UI/UX Reference](./zenskar-ui-ux-reference.md) | Public product research translated into RevFlow navigation, onboarding, RBAC, and workflow guidance |
 | [Demo Script](./phase-2-demo-script.md) | End-to-end walkthrough through AI review, billing, revenue, audit, and ops |
 | [Production Way Forward](./production-way-forward.md) | Monorepo decision, production decomposition, and scalability notes |
 | [Local Development](./local-development.md) | Setup commands, ports, and local service notes |

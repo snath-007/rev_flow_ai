@@ -1,5 +1,7 @@
 import { createSqlClient } from "@revflow/db";
 
+import { getRequiredWorkspaceId } from "../../lib/request-context.js";
+
 import { calculateJournalEntry } from "./journal-entry-builder.js";
 import { calculateRevenueSchedule } from "./revrec-engine.js";
 import type { RecognitionInput, RevenueRecognitionMethod } from "./revrec.types.js";
@@ -191,6 +193,7 @@ function buildObligationConfig(invoice: InvoiceContextRow, line: InvoiceLineItem
 }
 
 export async function listRevenueSchedules() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -217,6 +220,7 @@ export async function listRevenueSchedules() {
       from revenue_schedules rs
       join invoices i on i.id = rs.invoice_id
       join customers c on c.id = i.customer_id
+      where rs.workspace_id = ${workspaceId}
       order by rs.recognition_date desc, rs.created_at desc
       limit 100
     `;
@@ -229,6 +233,7 @@ export async function listRevenueSchedules() {
 
 
 export async function listJournalEntries() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -252,6 +257,7 @@ export async function listJournalEntries() {
       from journal_entries je
       join invoices i on i.id = je.invoice_id
       join customers c on c.id = i.customer_id
+      where je.workspace_id = ${workspaceId}
       order by je.entry_date desc, je.created_at desc
       limit 100
     `;
@@ -262,6 +268,7 @@ export async function listJournalEntries() {
   }
 }
 export async function generateRevenueSchedulesForInvoice(invoiceId: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -269,7 +276,8 @@ export async function generateRevenueSchedulesForInvoice(invoiceId: string) {
       const invoiceRows = await tx<InvoiceContextRow[]>`
         select id, status, period_start, period_end, currency
         from invoices
-        where id = ${invoiceId}
+        where workspace_id = ${workspaceId}
+          and id = ${invoiceId}
         limit 1
       `;
       const invoice = invoiceRows[0];
@@ -285,7 +293,8 @@ export async function generateRevenueSchedulesForInvoice(invoiceId: string) {
       const existingRows = await tx<{ id: string }[]>`
         select id
         from revenue_schedules
-        where invoice_id = ${invoiceId}
+        where workspace_id = ${workspaceId}
+          and invoice_id = ${invoiceId}
           and status <> 'void'
         limit 1
       `;
@@ -297,7 +306,8 @@ export async function generateRevenueSchedulesForInvoice(invoiceId: string) {
       const lineRows = await tx<InvoiceLineItemContextRow[]>`
         select id, invoice_id, contract_line_item_id, price_rule_id, description, amount, currency, calculation_snapshot
         from invoice_line_items
-        where invoice_id = ${invoiceId}
+        where workspace_id = ${workspaceId}
+          and invoice_id = ${invoiceId}
         order by created_at asc
       `;
 
@@ -320,8 +330,9 @@ export async function generateRevenueSchedulesForInvoice(invoiceId: string) {
         const config = buildObligationConfig(invoice, line);
 
         const obligationRows = await tx<PerformanceObligationRow[]>`
-          insert into performance_obligations (contract_line_item_id, name, recognition_method, service_start_date, service_end_date, allocation_amount, currency, config)
+          insert into performance_obligations (workspace_id, contract_line_item_id, name, recognition_method, service_start_date, service_end_date, allocation_amount, currency, config)
           values (
+            ${workspaceId},
             ${line.contract_line_item_id},
             ${line.description},
             ${recognitionMethod},
@@ -356,8 +367,9 @@ export async function generateRevenueSchedulesForInvoice(invoiceId: string) {
 
         for (const schedule of calculatedSchedules) {
           const scheduleRows = await tx<RevenueScheduleRow[]>`
-            insert into revenue_schedules (invoice_id, invoice_line_item_id, performance_obligation_id, recognition_method, status, period_start, period_end, recognition_date, recognized_amount, deferred_amount, currency, calculation_snapshot)
+            insert into revenue_schedules (workspace_id, invoice_id, invoice_line_item_id, performance_obligation_id, recognition_method, status, period_start, period_end, recognition_date, recognized_amount, deferred_amount, currency, calculation_snapshot)
             values (
+              ${workspaceId},
               ${schedule.invoiceId},
               ${schedule.invoiceLineItemId},
               ${schedule.performanceObligationId},
@@ -398,8 +410,9 @@ export async function generateRevenueSchedulesForInvoice(invoiceId: string) {
           });
 
           const journalEntryRows = await tx<JournalEntryRow[]>`
-            insert into journal_entries (revenue_schedule_id, invoice_id, status, entry_date, debit_account, credit_account, amount, currency, memo, metadata)
+            insert into journal_entries (workspace_id, revenue_schedule_id, invoice_id, status, entry_date, debit_account, credit_account, amount, currency, memo, metadata)
             values (
+              ${workspaceId},
               ${journalEntry.revenueScheduleId},
               ${journalEntry.invoiceId},
               ${journalEntry.status},

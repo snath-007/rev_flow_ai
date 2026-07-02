@@ -11,6 +11,8 @@ import type {
   ReviewAiExtractionInput
 } from "@revflow/shared";
 
+import { getRequiredWorkspaceId } from "../../lib/request-context.js";
+
 import type { ContractExtractionResult } from "./ai.types.js";
 
 type ExtractionRunRow = {
@@ -110,12 +112,14 @@ function toExtractionRun(row: ExtractionRunRow): AiExtractionRun {
 }
 
 export async function listExtractionRuns() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<ExtractionRunRow[]>`
       select ${sql.unsafe(extractionRunColumns)}
       from ai_extraction_runs
+      where workspace_id = ${workspaceId}
       order by created_at desc
       limit 100
     `;
@@ -127,13 +131,15 @@ export async function listExtractionRuns() {
 }
 
 export async function getExtractionRunById(id: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<ExtractionRunRow[]>`
       select ${sql.unsafe(extractionRunColumns)}
       from ai_extraction_runs
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
       limit 1
     `;
 
@@ -148,11 +154,13 @@ export async function createExtractionRun(
   provider: string,
   promptVersion: string
 ) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<ExtractionRunRow[]>`
       insert into ai_extraction_runs (
+        workspace_id,
         source_type,
         source_name,
         source_text,
@@ -161,6 +169,7 @@ export async function createExtractionRun(
         prompt_version
       )
       values (
+        ${workspaceId},
         ${input.sourceType},
         ${input.sourceName ?? null},
         ${input.sourceText},
@@ -183,13 +192,15 @@ export async function createExtractionRun(
 }
 
 export async function markExtractionRunExtracting(id: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<ExtractionRunRow[]>`
       update ai_extraction_runs
       set status = 'extracting', updated_at = now()
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
         and status = 'created'
       returning ${sql.unsafe(extractionRunColumns)}
     `;
@@ -201,6 +212,7 @@ export async function markExtractionRunExtracting(id: string) {
 }
 
 export async function completeExtractionRun(id: string, result: ContractExtractionResult) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -216,7 +228,8 @@ export async function completeExtractionRun(id: string, result: ContractExtracti
         ambiguities = ${sql.json(result.output.ambiguities as never)},
         error_message = null,
         updated_at = now()
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
         and status = 'extracting'
       returning ${sql.unsafe(extractionRunColumns)}
     `;
@@ -228,6 +241,7 @@ export async function completeExtractionRun(id: string, result: ContractExtracti
 }
 
 export async function failExtractionRun(id: string, errorMessage: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -237,7 +251,8 @@ export async function failExtractionRun(id: string, errorMessage: string) {
         status = 'failed',
         error_message = ${errorMessage},
         updated_at = now()
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
         and status in ('created', 'extracting')
       returning ${sql.unsafe(extractionRunColumns)}
     `;
@@ -248,6 +263,7 @@ export async function failExtractionRun(id: string, errorMessage: string) {
   }
 }
 export async function reviewExtractionRun(id: string, input: ReviewAiExtractionInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -255,7 +271,8 @@ export async function reviewExtractionRun(id: string, input: ReviewAiExtractionI
       const existingRows = await tx<{ status: AiExtractionStatus }[]>`
         select status
         from ai_extraction_runs
-        where id = ${id}
+        where workspace_id = ${workspaceId}
+        and id = ${id}
         for update
       `;
       const existing = existingRows[0];
@@ -270,6 +287,7 @@ export async function reviewExtractionRun(id: string, input: ReviewAiExtractionI
 
       const reviewRows = await tx<ExtractionReviewRow[]>`
         insert into ai_extraction_reviews (
+          workspace_id,
           extraction_run_id,
           status,
           reviewer,
@@ -279,6 +297,7 @@ export async function reviewExtractionRun(id: string, input: ReviewAiExtractionI
           completed_at
         )
         values (
+          ${workspaceId},
           ${id},
           ${input.status},
           ${input.reviewer},
@@ -303,7 +322,8 @@ export async function reviewExtractionRun(id: string, input: ReviewAiExtractionI
           reviewed_by = ${input.reviewer},
           reviewed_at = now(),
           updated_at = now()
-        where id = ${id}
+        where workspace_id = ${workspaceId}
+        and id = ${id}
         returning ${tx.unsafe(extractionRunColumns)}
       `;
       const runRow = runRows[0];
@@ -323,6 +343,7 @@ export async function reviewExtractionRun(id: string, input: ReviewAiExtractionI
 }
 
 export async function markExtractionRunApplied(id: string, contractId: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -333,7 +354,8 @@ export async function markExtractionRunApplied(id: string, contractId: string) {
         applied_contract_id = ${contractId},
         applied_at = now(),
         updated_at = now()
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
         and status = 'approved'
       returning ${sql.unsafe(extractionRunColumns)}
     `;

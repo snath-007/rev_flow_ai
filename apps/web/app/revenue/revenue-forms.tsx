@@ -14,6 +14,11 @@ export function RevenueScheduleGenerateForm({ invoices }: { invoices: Invoice[] 
     setError(null);
     setIsSubmitting(true);
 
+    if (!window.confirm("Generate revenue schedules and journal entries for this approved invoice?")) {
+      setIsSubmitting(false);
+      return;
+    }
+
     const payload = {
       invoiceId: String(formData.get("invoiceId") ?? "")
     };
@@ -51,6 +56,8 @@ export function RevenueScheduleGenerateForm({ invoices }: { invoices: Invoice[] 
           ))}
         </select>
       </div>
+      {approvedInvoices.length === 0 ? <p className="form-help">Approve an invoice before generating revenue schedules.</p> : null}
+      <div className="consequence-note">Generation creates deterministic recognition schedules and journal evidence from the approved invoice.</div>
       {error ? <p className="error-text">{error}</p> : null}
       <button disabled={isSubmitting || approvedInvoices.length === 0} type="submit">
         {isSubmitting ? "Generating..." : "Generate revenue schedules"}

@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { generateInvoiceSchema } from "@revflow/shared";
 
+import { requireCapability } from "../../lib/authorization.js";
 import { ApiError, validateBody } from "../../lib/http.js";
 import * as invoicesService from "./invoices.service.js";
 
 export const invoicesRouter = Router();
 
-invoicesRouter.get("/", async (_req, res, next) => {
+invoicesRouter.get("/", requireCapability("invoices.read"), async (_req, res, next) => {
   try {
     const invoices = await invoicesService.listInvoices();
     res.status(200).json({ invoices });
@@ -15,7 +16,7 @@ invoicesRouter.get("/", async (_req, res, next) => {
   }
 });
 
-invoicesRouter.post("/generate", validateBody(generateInvoiceSchema), async (req, res, next) => {
+invoicesRouter.post("/generate", requireCapability("invoices.generate"), validateBody(generateInvoiceSchema), async (req, res, next) => {
   try {
     const invoice = await invoicesService.generateInvoice(req.body);
     res.status(201).json({ invoice });
@@ -24,9 +25,9 @@ invoicesRouter.post("/generate", validateBody(generateInvoiceSchema), async (req
   }
 });
 
-invoicesRouter.get("/:id", async (req, res, next) => {
+invoicesRouter.get("/:id", requireCapability("invoices.read"), async (req, res, next) => {
   try {
-    const invoice = await invoicesService.getInvoiceById(req.params.id);
+    const invoice = await invoicesService.getInvoiceById((req.params as { id: string }).id);
 
     if (!invoice) {
       throw new ApiError(404, "INVOICE_NOT_FOUND", "Invoice not found");
@@ -38,9 +39,9 @@ invoicesRouter.get("/:id", async (req, res, next) => {
   }
 });
 
-invoicesRouter.post("/:id/approve", async (req, res, next) => {
+invoicesRouter.post("/:id/approve", requireCapability("invoices.approve"), async (req, res, next) => {
   try {
-    const invoice = await invoicesService.approveInvoice(req.params.id);
+    const invoice = await invoicesService.approveInvoice((req.params as { id: string }).id);
     res.status(200).json({ invoice });
   } catch (error) {
     next(error);

@@ -1,5 +1,10 @@
+import "server-only";
+
+import { auth } from "@clerk/nextjs/server";
+
 import type {
   AddContractLineItemInput,
+  AuthenticationContext,
   AggregateUsageInput,
   AiExtractionRun,
   AuditLog,
@@ -19,6 +24,7 @@ import type {
   JobRun,
   JournalEntry,
   Meter,
+  OnboardWorkspaceInput,
   Plan,
   PriceRule,
   Product,
@@ -28,23 +34,47 @@ import type {
   UsageEvent
 } from "@revflow/shared";
 
+import { isClerkConfigured } from "./auth-config";
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiUrl}${path}`, {
+  const headers = new Headers(init?.headers);
+  if (!headers.has("content-type")) {
+    headers.set("content-type", "application/json");
+  }
+
+  if (isClerkConfigured()) {
+    const session = await auth();
+    const token = await session.getToken();
+    if (token) {
+      headers.set("authorization", "Bearer " + token);
+    }
+  }
+
+  const response = await fetch(apiUrl + path, {
     ...init,
-    headers: {
-      "content-type": "application/json",
-      ...init?.headers
-    },
+    headers,
     cache: "no-store"
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    const body = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(body?.message ?? "API request failed: " + response.status);
   }
 
   return response.json() as Promise<T>;
+}
+
+export async function getAuthenticationContext() {
+  return request<AuthenticationContext>("/auth/context");
+}
+
+export async function onboardWorkspace(input: OnboardWorkspaceInput) {
+  return request<Extract<AuthenticationContext, { status: "ready" }>>("/auth/onboard", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
 }
 
 export async function listCustomers() {

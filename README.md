@@ -653,6 +653,8 @@ Status: planned.
 Goal: turn the functional POC into a coherent, access-controlled, deployable product demonstration.
 
 - Standardize navigation, visual language, responsive behavior, and end-to-end UX
+- Establish a distinctive RevFlow design system across the public site and authenticated workspace
+- Add a polished public landing experience that demonstrates the contract-to-revenue lifecycle
 - Add authentication, customer/tenant onboarding, and role-based access control
 - Introduce tenant-aware ownership boundaries before exposing the application online
 - Add MRR, ARR, NRR, revenue waterfall, AR, and DSO reporting
@@ -661,6 +663,8 @@ Goal: turn the functional POC into a coherent, access-controlled, deployable pro
 - Define hosted deployment for web, API, worker, Postgres, Redis, and AI-provider configuration
 - Add production architecture, security, observability, backup, and scaling notes
 - Refresh screenshots, demo data, and portfolio walkthrough
+
+Detailed checklist: [docs/phase-6-execution-checklist.md](./docs/phase-6-execution-checklist.md)
 
 ## Local Development
 
@@ -779,6 +783,7 @@ npm run typecheck -w @revflow/db
 - Phase 3 plan: [docs/phase-3-plan.md](./docs/phase-3-plan.md)
 - Phase 4 checklist: [docs/phase-4-execution-checklist.md](./docs/phase-4-execution-checklist.md)
 - Phase 5 checklist: [docs/phase-5-execution-checklist.md](./docs/phase-5-execution-checklist.md)
+- Phase 6 checklist: [docs/phase-6-execution-checklist.md](./docs/phase-6-execution-checklist.md)
 - AI extraction module: [docs/modules/ai-extraction.md](./docs/modules/ai-extraction.md)
 - Production way forward: [docs/production-way-forward.md](./docs/production-way-forward.md)
 

@@ -1,6 +1,8 @@
 import { createSqlClient } from "@revflow/db";
 import type { AddContractLineItemInput, CreateContractInput } from "@revflow/shared";
 
+import { getRequiredWorkspaceId } from "../../lib/request-context.js";
+
 type DateLike = Date | string;
 
 type ContractRow = {
@@ -89,6 +91,7 @@ function toContractLineItem(row: ContractLineItemRow) {
 }
 
 export async function listContracts() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -107,6 +110,7 @@ export async function listContracts() {
       join customers cu on cu.id = c.customer_id
       left join contract_versions cv on cv.contract_id = c.id and cv.version_number = 1
       left join contract_line_items cli on cli.contract_version_id = cv.id
+      where c.workspace_id = ${workspaceId}
       group by c.id, cu.name
       order by c.created_at desc
     `;
@@ -118,6 +122,7 @@ export async function listContracts() {
 }
 
 export async function getContractById(id: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -133,7 +138,8 @@ export async function getContractById(id: string) {
         cu.name as customer_name
       from contracts c
       join customers cu on cu.id = c.customer_id
-      where c.id = ${id}
+      where c.workspace_id = ${workspaceId}
+        and c.id = ${id}
       limit 1
     `;
     const contract = contractRows[0];
@@ -145,7 +151,8 @@ export async function getContractById(id: string) {
     const versionRows = await sql<ContractVersionRow[]>`
       select id, contract_id, version_number, effective_from, effective_to, terms_snapshot, created_at
       from contract_versions
-      where contract_id = ${id}
+      where workspace_id = ${workspaceId}
+        and contract_id = ${id}
       order by version_number desc
       limit 1
     `;
@@ -155,7 +162,8 @@ export async function getContractById(id: string) {
       ? await sql<ContractLineItemRow[]>`
           select id, contract_version_id, price_rule_id, name, override_config, created_at
           from contract_line_items
-          where contract_version_id = ${version.id}
+          where workspace_id = ${workspaceId}
+            and contract_version_id = ${version.id}
           order by created_at asc
         `
       : [];
@@ -172,13 +180,14 @@ export async function getContractById(id: string) {
 }
 
 export async function createContract(input: CreateContractInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     return await sql.begin(async (tx) => {
       const contractRows = await tx<ContractRow[]>`
-        insert into contracts (customer_id, status, start_date, end_date)
-        values (${input.customerId}, 'draft', ${input.startDate}, ${input.endDate ?? null})
+        insert into contracts (workspace_id, customer_id, status, start_date, end_date)
+        values (${workspaceId}, ${input.customerId}, 'draft', ${input.startDate}, ${input.endDate ?? null})
         returning id, customer_id, status, start_date, end_date, created_at, updated_at
       `;
       const contract = contractRows[0];
@@ -188,8 +197,8 @@ export async function createContract(input: CreateContractInput) {
       }
 
       const versionRows = await tx<ContractVersionRow[]>`
-        insert into contract_versions (contract_id, version_number, effective_from, effective_to, terms_snapshot)
-        values (${contract.id}, 1, ${input.startDate}, ${input.endDate ?? null}, ${tx.json({ status: "draft" } as never)})
+        insert into contract_versions (workspace_id, contract_id, version_number, effective_from, effective_to, terms_snapshot)
+        values (${workspaceId}, ${contract.id}, 1, ${input.startDate}, ${input.endDate ?? null}, ${tx.json({ status: "draft" } as never)})
         returning id, contract_id, version_number, effective_from, effective_to, terms_snapshot, created_at
       `;
       const version = versionRows[0];
@@ -211,6 +220,7 @@ export async function createContract(input: CreateContractInput) {
 }
 
 export async function addContractLineItem(contractId: string, input: AddContractLineItemInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -218,7 +228,8 @@ export async function addContractLineItem(contractId: string, input: AddContract
       const contractRows = await tx<Pick<ContractRow, "status">[]>`
         select status
         from contracts
-        where id = ${contractId}
+        where workspace_id = ${workspaceId}
+          and id = ${contractId}
         limit 1
       `;
       const contract = contractRows[0];
@@ -234,7 +245,8 @@ export async function addContractLineItem(contractId: string, input: AddContract
       const versionRows = await tx<Pick<ContractVersionRow, "id">[]>`
         select id
         from contract_versions
-        where contract_id = ${contractId}
+        where workspace_id = ${workspaceId}
+          and contract_id = ${contractId}
         order by version_number desc
         limit 1
       `;
@@ -245,8 +257,8 @@ export async function addContractLineItem(contractId: string, input: AddContract
       }
 
       const lineItemRows = await tx<ContractLineItemRow[]>`
-        insert into contract_line_items (contract_version_id, price_rule_id, name, override_config)
-        values (${version.id}, ${input.priceRuleId}, ${input.name}, ${tx.json((input.overrideConfig ?? {}) as never)})
+        insert into contract_line_items (workspace_id, contract_version_id, price_rule_id, name, override_config)
+        values (${workspaceId}, ${version.id}, ${input.priceRuleId}, ${input.name}, ${tx.json((input.overrideConfig ?? {}) as never)})
         returning id, contract_version_id, price_rule_id, name, override_config, created_at
       `;
       const lineItem = lineItemRows[0];
@@ -263,6 +275,7 @@ export async function addContractLineItem(contractId: string, input: AddContract
 }
 
 export async function approveContract(contractId: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -270,7 +283,8 @@ export async function approveContract(contractId: string) {
       const contractRows = await tx<ContractRow[]>`
         select id, customer_id, status, start_date, end_date, created_at, updated_at
         from contracts
-        where id = ${contractId}
+        where workspace_id = ${workspaceId}
+          and id = ${contractId}
         limit 1
       `;
       const contract = contractRows[0];
@@ -286,7 +300,8 @@ export async function approveContract(contractId: string) {
       const versionRows = await tx<ContractVersionRow[]>`
         select id, contract_id, version_number, effective_from, effective_to, terms_snapshot, created_at
         from contract_versions
-        where contract_id = ${contractId}
+        where workspace_id = ${workspaceId}
+          and contract_id = ${contractId}
         order by version_number desc
         limit 1
       `;
@@ -299,7 +314,8 @@ export async function approveContract(contractId: string) {
       const lineItemRows = await tx<ContractLineItemRow[]>`
         select id, contract_version_id, price_rule_id, name, override_config, created_at
         from contract_line_items
-        where contract_version_id = ${version.id}
+        where workspace_id = ${workspaceId}
+          and contract_version_id = ${version.id}
         order by created_at asc
       `;
 
@@ -311,13 +327,15 @@ export async function approveContract(contractId: string) {
       await tx`
         update contract_versions
         set terms_snapshot = ${tx.json(termsSnapshot as never)}
-        where id = ${version.id}
+        where workspace_id = ${workspaceId}
+          and id = ${version.id}
       `;
 
       const updatedRows = await tx<ContractRow[]>`
         update contracts
         set status = 'active', updated_at = now()
-        where id = ${contractId}
+        where workspace_id = ${workspaceId}
+          and id = ${contractId}
         returning id, customer_id, status, start_date, end_date, created_at, updated_at
       `;
       const updatedContract = updatedRows[0];

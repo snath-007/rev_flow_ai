@@ -1,5 +1,7 @@
-﻿import { createSqlClient } from "@revflow/db";
+import { createSqlClient } from "@revflow/db";
 import type { GenerateInvoiceInput } from "@revflow/shared";
+
+import { getRequiredWorkspaceId } from "../../lib/request-context.js";
 import { calculateInvoiceLineItems, calculateInvoiceTotal } from "./invoice-calculator.js";
 
 type DateLike = Date | string;
@@ -98,11 +100,12 @@ function toInvoiceLineItem(row: InvoiceLineItemRow) {
   };
 }
 
-async function getInvoiceLineItems(sql: ReturnType<typeof createSqlClient>, invoiceId: string) {
+async function getInvoiceLineItems(sql: ReturnType<typeof createSqlClient>, workspaceId: string, invoiceId: string) {
   const rows = await sql<InvoiceLineItemRow[]>`
     select id, invoice_id, contract_line_item_id, price_rule_id, description, quantity, unit_price, amount, currency, calculation_snapshot, created_at
     from invoice_line_items
-    where invoice_id = ${invoiceId}
+    where workspace_id = ${workspaceId}
+      and invoice_id = ${invoiceId}
     order by created_at asc
   `;
 
@@ -110,6 +113,7 @@ async function getInvoiceLineItems(sql: ReturnType<typeof createSqlClient>, invo
 }
 
 export async function listInvoices() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -130,6 +134,7 @@ export async function listInvoices() {
         i.updated_at
       from invoices i
       join customers c on c.id = i.customer_id
+      where i.workspace_id = ${workspaceId}
       order by i.created_at desc
     `;
 
@@ -140,6 +145,7 @@ export async function listInvoices() {
 }
 
 export async function getInvoiceById(id: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -160,7 +166,8 @@ export async function getInvoiceById(id: string) {
         i.updated_at
       from invoices i
       join customers c on c.id = i.customer_id
-      where i.id = ${id}
+      where i.workspace_id = ${workspaceId}
+        and i.id = ${id}
       limit 1
     `;
     const row = rows[0];
@@ -169,7 +176,7 @@ export async function getInvoiceById(id: string) {
       return null;
     }
 
-    const lineItems = await getInvoiceLineItems(sql, id);
+    const lineItems = await getInvoiceLineItems(sql, workspaceId, id);
     return toInvoice(row, lineItems);
   } finally {
     await sql.end({ timeout: 5 });
@@ -177,6 +184,7 @@ export async function getInvoiceById(id: string) {
 }
 
 export async function generateInvoice(input: GenerateInvoiceInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -184,7 +192,8 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
       const contractRows = await tx<ContractRow[]>`
         select id, customer_id, status
         from contracts
-        where id = ${input.contractId}
+        where workspace_id = ${workspaceId}
+          and id = ${input.contractId}
         limit 1
       `;
       const contract = contractRows[0];
@@ -200,7 +209,8 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
       const existingInvoiceRows = await tx<{ id: string }[]>`
         select id
         from invoices
-        where contract_id = ${input.contractId}
+        where workspace_id = ${workspaceId}
+          and contract_id = ${input.contractId}
           and period_start = ${input.periodStart}
           and period_end = ${input.periodEnd}
           and status in ('draft', 'approved', 'issued', 'paid')
@@ -257,16 +267,19 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
             count(ue.id) as event_count,
             coalesce(sum(ue.quantity), 0) as total_quantity
           from usage_events ue
-          where ue.contract_id = cv.contract_id
+          where ue.workspace_id = ${workspaceId}
+            and ue.contract_id = cv.contract_id
             and ue.meter_id = pr.meter_id
             and ue.occurred_at >= ${input.periodStart}
             and ue.occurred_at < (${input.periodEnd}::date + interval '1 day')
         ) raw_usage on pr.meter_id is not null
-        where cv.contract_id = ${input.contractId}
+        where cv.workspace_id = ${workspaceId}
+          and cv.contract_id = ${input.contractId}
           and cv.version_number = (
             select max(version_number)
             from contract_versions
-            where contract_id = ${input.contractId}
+            where workspace_id = ${workspaceId}
+          and contract_id = ${input.contractId}
           )
         order by cli.created_at asc
       `;
@@ -283,8 +296,9 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
       const currency = lineItems[0]?.currency ?? "USD";
 
       const invoiceRows = await tx<InvoiceRow[]>`
-        insert into invoices (customer_id, contract_id, status, period_start, period_end, currency, subtotal, total, calculation_snapshot)
+        insert into invoices (workspace_id, customer_id, contract_id, status, period_start, period_end, currency, subtotal, total, calculation_snapshot)
         values (
+          ${workspaceId},
           ${contract.customer_id},
           ${contract.id},
           'draft',
@@ -307,8 +321,9 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
 
       for (const line of lineItems) {
         const rows = await tx<InvoiceLineItemRow[]>`
-          insert into invoice_line_items (invoice_id, contract_line_item_id, price_rule_id, description, quantity, unit_price, amount, currency, calculation_snapshot)
+          insert into invoice_line_items (workspace_id, invoice_id, contract_line_item_id, price_rule_id, description, quantity, unit_price, amount, currency, calculation_snapshot)
           values (
+            ${workspaceId},
             ${invoice.id},
             ${line.contractLineItemId},
             ${line.priceRuleId},
@@ -338,13 +353,15 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
 }
 
 export async function approveInvoice(id: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<InvoiceRow[]>`
       update invoices
       set status = 'approved', updated_at = now()
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
         and status = 'draft'
       returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, calculation_snapshot, created_at, updated_at
     `;

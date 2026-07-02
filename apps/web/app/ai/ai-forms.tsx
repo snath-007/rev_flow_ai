@@ -8,62 +8,130 @@ import type {
   ReviewAiExtractionInput
 } from "@revflow/shared";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 export function AiExtractionCreateForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mode, setMode] = useState<"paste" | "upload">("paste");
+  const [sourceName, setSourceName] = useState("");
+  const [sourceText, setSourceText] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  async function onSubmit(formData: FormData) {
+  async function submitExtraction(payload: { sourceName?: string; sourceText: string; sourceType?: "text" | "document" }) {
+    const response = await fetch("/api/ai/extractions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as { message?: string } | null;
+      throw new Error(body?.message ?? "Could not extract contract terms");
+    }
+  }
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError(null);
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/ai/extractions", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          sourceType: "text",
-          sourceName: String(formData.get("sourceName") ?? "") || undefined,
-          sourceText: String(formData.get("sourceText") ?? "")
-        })
-      });
+      let text = sourceText;
+      let name = sourceName.trim() || undefined;
+      let sourceType: "text" | "document" = "text";
 
-      if (!response.ok) {
-        throw new Error("Could not extract contract terms");
+      if (mode === "upload") {
+        if (!selectedFile) {
+          throw new Error("Choose a contract file first");
+        }
+
+        const extension = selectedFile.name.split(".").pop()?.toLowerCase();
+        if (!["txt", "md"].includes(extension ?? "")) {
+          throw new Error("PDF, Word, and scanned contract parsing need the document parser service. Paste text or upload .txt/.md for now.");
+        }
+
+        text = await selectedFile.text();
+        name = name ?? selectedFile.name;
+        sourceType = "document";
       }
 
+      if (text.trim().length < 20) {
+        throw new Error("Add at least 20 characters of contract text before extraction");
+      }
+
+      const toastId = toast.loading("Extraction started", { description: "RevFlow is reading the contract terms." });
+      await submitExtraction({ sourceName: name, sourceText: text, sourceType });
+      toast.success("Extraction ready for review", { id: toastId, description: "Open the run below to resolve fields and evidence." });
+      setIsOpen(false);
+      setSourceName("");
+      setSourceText("");
+      setSelectedFile(null);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+      toast.error("Extraction did not start", { description: message });
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form action={onSubmit} className="form-panel ai-intake-form">
-      <div className="panel-title-row">
-        <h2>New extraction</h2>
-        <span className="status-badge">Mock provider</span>
-      </div>
-      <div>
-        <label htmlFor="ai-source-name">Source name</label>
-        <input id="ai-source-name" name="sourceName" placeholder="Enterprise agreement" />
-      </div>
-      <div>
-        <label htmlFor="ai-source-text">Contract text</label>
-        <textarea id="ai-source-text" name="sourceText" rows={12} minLength={20} required />
-      </div>
-      {error ? <p className="error-text">{error}</p> : null}
-      <button disabled={isSubmitting} type="submit">
-        {isSubmitting ? "Extracting..." : "Extract terms"}
-      </button>
-    </form>
+    <>
+      <button className="primary-link ai-new-extraction-button" onClick={() => setIsOpen(true)} type="button">New extraction</button>
+      {isOpen ? (
+        <div className="ai-modal-backdrop" role="presentation">
+          <section aria-labelledby="ai-new-extraction-title" aria-modal="true" className="ai-extraction-modal" role="dialog">
+            <div className="panel-title-row">
+              <div>
+                <p className="eyebrow">AI intake</p>
+                <h2 id="ai-new-extraction-title">New extraction</h2>
+                <p>Start from pasted contract text today. Document upload is staged for the parser service.</p>
+              </div>
+              <button aria-label="Close extraction modal" className="secondary-command" onClick={() => setIsOpen(false)} type="button">Close</button>
+            </div>
+
+            <div className="ai-intake-tabs" role="tablist" aria-label="Extraction source">
+              <button aria-selected={mode === "paste"} className={mode === "paste" ? "active" : ""} onClick={() => setMode("paste")} role="tab" type="button">Paste text</button>
+              <button aria-selected={mode === "upload"} className={mode === "upload" ? "active" : ""} onClick={() => setMode("upload")} role="tab" type="button">Upload file</button>
+            </div>
+
+            <form className="ai-modal-form" onSubmit={onSubmit}>
+              <div>
+                <label htmlFor="ai-source-name">Source name</label>
+                <input id="ai-source-name" onChange={(event) => setSourceName(event.target.value)} placeholder="Enterprise agreement" value={sourceName} />
+              </div>
+
+              {mode === "paste" ? (
+                <div>
+                  <label htmlFor="ai-source-text">Contract text</label>
+                  <textarea id="ai-source-text" minLength={20} onChange={(event) => setSourceText(event.target.value)} rows={13} value={sourceText} />
+                </div>
+              ) : (
+                <div className="ai-upload-dropzone">
+                  <label htmlFor="ai-source-file">Contract file</label>
+                  <input accept=".txt,.md,.pdf,.doc,.docx" id="ai-source-file" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} type="file" />
+                  <strong>{selectedFile ? selectedFile.name : "Drop in a contract file"}</strong>
+                  <span>.txt and .md can be read now. PDF, Word, and scanned files are queued for the document parser service.</span>
+                </div>
+              )}
+
+              {error ? <p className="error-text">{error}</p> : null}
+              <div className="ai-modal-actions">
+                <span>{mode === "paste" ? "Paste terms, then create a review run." : "Upload path is staged for richer document parsing."}</span>
+                <button disabled={isSubmitting} type="submit">{isSubmitting ? "Starting..." : "Start extraction"}</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+    </>
   );
 }
-
 type FieldDraft = {
   value: string;
   status: AiFieldDecisionStatus;
@@ -214,6 +282,11 @@ export function AiReviewWorkbench({ extractions }: { extractions: AiExtractionRu
   async function applyExtraction() {
     if (!selected) return;
     setError(null);
+
+    if (!window.confirm("Apply the approved extraction into draft customer and contract records? The resulting contract still requires normal activation controls.")) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -270,8 +343,7 @@ export function AiReviewWorkbench({ extractions }: { extractions: AiExtractionRu
               <p>{baseOutput?.summary ?? selected?.errorMessage ?? "No structured output"}</p>
             </div>
             {canReview ? (
-              <button className="secondary-command" onClick={acceptAll} type="button"> Accept all
-              </button>
+              <button className="secondary-command" onClick={acceptAll} type="button">Accept all fields</button>
             ) : null}
           </div>
 
@@ -306,12 +378,9 @@ export function AiReviewWorkbench({ extractions }: { extractions: AiExtractionRu
 
                   {canReview ? (
                     <div className="field-actions" aria-label={`Review actions for ${field.label}`}>
-                      <button aria-label={`Accept ${field.label}`} onClick={() => setDecision(field, "accepted")} title="Accept extracted value" type="button">
-                      </button>
-                      <button aria-label={`Edit ${field.label}`} onClick={() => setDecision(field, "edited")} title="Edit value" type="button">
-                      </button>
-                      <button aria-label={`Reject ${field.label}`} onClick={() => setDecision(field, "rejected")} title="Reject field" type="button">
-                      </button>
+                      <button aria-label={`Accept ${field.label}`} onClick={() => setDecision(field, "accepted")} title="Accept extracted value" type="button">OK</button>
+                      <button aria-label={`Edit ${field.label}`} onClick={() => setDecision(field, "edited")} title="Edit value" type="button">Edit</button>
+                      <button aria-label={`Reject ${field.label}`} onClick={() => setDecision(field, "rejected")} title="Reject field" type="button">Reject</button>
                     </div>
                   ) : null}
                 </div>
@@ -332,11 +401,9 @@ export function AiReviewWorkbench({ extractions }: { extractions: AiExtractionRu
                 </div>
               </div>
               <div className="review-actions">
-                <span>{pendingCount} pending</span>
-                <button className="danger-command" disabled={isSubmitting} onClick={() => submitReview("rejected")} type="button"> Reject extraction
-                </button>
-                <button disabled={isSubmitting || pendingCount > 0} onClick={() => submitReview("approved")} type="button"> Approve reviewed extraction
-                </button>
+                <span>{pendingCount === 0 ? "All fields resolved" : `${pendingCount} fields still pending`}</span>
+                <button className="danger-command" disabled={isSubmitting} onClick={() => submitReview("rejected")} type="button">Reject extraction</button>
+                <button disabled={isSubmitting || pendingCount > 0} onClick={() => submitReview("approved")} type="button">Approve reviewed extraction</button>
               </div>
             </div>
           ) : null}
@@ -347,8 +414,7 @@ export function AiReviewWorkbench({ extractions }: { extractions: AiExtractionRu
                 <strong>Approved for draft creation</strong>
                 <span>Customer and contract records remain subject to normal activation controls.</span>
               </div>
-              <button disabled={isSubmitting} onClick={applyExtraction} type="button"> Apply to draft
-              </button>
+              <button disabled={isSubmitting} onClick={applyExtraction} type="button">Apply to draft</button>
             </div>
           ) : null}
 

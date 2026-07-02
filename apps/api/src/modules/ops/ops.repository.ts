@@ -1,5 +1,7 @@
-﻿import { createSqlClient } from "@revflow/db";
+import { createSqlClient } from "@revflow/db";
 import type { JobRun } from "@revflow/shared";
+
+import { getRequiredWorkspaceId } from "../../lib/request-context.js";
 
 type JobRunRow = {
   id: string;
@@ -34,12 +36,14 @@ function toJobRun(row: JobRunRow): JobRun {
 }
 
 export async function listJobRuns() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<JobRunRow[]>`
       select id, queue_name, job_name, job_id, status, payload, result, error_message, started_at, finished_at, created_at, updated_at
       from job_runs
+      where workspace_id = ${workspaceId}
       order by created_at desc
       limit 100
     `;

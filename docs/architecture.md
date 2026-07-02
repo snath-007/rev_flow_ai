@@ -112,4 +112,11 @@ Future observability:
 - Tracing
 - Queue dashboards
 - Alerting
+## Accepted Phase 6 Decisions
 
+- [Identity and session boundary](./adr/0001-identity-and-session-boundary.md)
+- [Workspace tenancy and ownership](./adr/0002-workspace-tenancy-and-ownership.md)
+- [Hosted demo topology](./adr/0003-hosted-demo-topology.md)
+- [AI hosting and provider policy](./adr/0004-ai-hosting-and-provider-policy.md)
+
+These ADRs refine the runtime boundaries above. Clerk verifies identity, RevFlow authorizes from application memberships, and every finance repository remains workspace-scoped in PostgreSQL.

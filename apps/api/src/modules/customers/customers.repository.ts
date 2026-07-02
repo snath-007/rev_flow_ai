@@ -1,6 +1,8 @@
 import { createSqlClient } from "@revflow/db";
 import type { CreateCustomerInput } from "@revflow/shared";
 
+import { getRequiredWorkspaceId } from "../../lib/request-context.js";
+
 type CustomerRow = {
   id: string;
   name: string;
@@ -22,12 +24,14 @@ function toCustomer(row: CustomerRow) {
 }
 
 export async function listCustomers() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<CustomerRow[]>`
       select id, name, email, billing_address, created_at, updated_at
       from customers
+      where workspace_id = ${workspaceId}
       order by created_at desc
     `;
 
@@ -38,13 +42,15 @@ export async function listCustomers() {
 }
 
 export async function getCustomerById(id: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<CustomerRow[]>`
       select id, name, email, billing_address, created_at, updated_at
       from customers
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
       limit 1
     `;
 
@@ -56,13 +62,15 @@ export async function getCustomerById(id: string) {
 
 
 export async function findCustomerByEmail(email: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<CustomerRow[]>`
       select id, name, email, billing_address, created_at, updated_at
       from customers
-      where lower(email) = lower(${email})
+      where workspace_id = ${workspaceId}
+        and lower(email) = lower(${email})
       limit 1
     `;
 
@@ -72,12 +80,13 @@ export async function findCustomerByEmail(email: string) {
   }
 }
 export async function createCustomer(input: CreateCustomerInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<CustomerRow[]>`
-      insert into customers (name, email, billing_address)
-      values (${input.name}, ${input.email}, ${input.billingAddress ?? null})
+      insert into customers (workspace_id, name, email, billing_address)
+      values (${workspaceId}, ${input.name}, ${input.email}, ${input.billingAddress ?? null})
       returning id, name, email, billing_address, created_at, updated_at
     `;
     const row = rows[0];

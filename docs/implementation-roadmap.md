@@ -117,6 +117,8 @@ Status: planned.
 Goal: turn the functional POC into a coherent, access-controlled, deployable product demonstration.
 
 - Unified navigation, responsive UI, and standardized interaction patterns
+- Distinctive RevFlow design system for public and authenticated surfaces
+- Public landing experience demonstrating the contract-to-revenue lifecycle
 - Authentication and systematic customer/tenant onboarding
 - Role-based access control and tenant-aware data ownership
 - MRR, ARR, NRR, revenue waterfall, AR, and DSO dashboards
@@ -125,3 +127,5 @@ Goal: turn the functional POC into a coherent, access-controlled, deployable pro
 - Hosted deployment design for frontend, API, worker, Postgres, Redis, and AI
 - Security, observability, backups, scaling, and production tradeoff notes
 - Architecture diagrams, screenshots, and polished demo flow
+
+Detailed checklist: [Phase 6 Execution Checklist](./phase-6-execution-checklist.md)

@@ -1,94 +1,47 @@
-import { listContracts, listMeters, listUsageAggregates, listUsageEvents } from "@/lib/api-client";
-
-import { UsageEventForm } from "./usage-forms";
+import { WorkspaceShell } from "../workspace-shell";
+import { getAuthenticationContext, listContracts, listMeters, listUsageAggregates, listUsageEvents } from "@/lib/api-client";
+import { hasCapability } from "@/lib/access";
+import { NextAction, WorkflowGuide, WorkflowPageHeader } from "../workflow-components";
+import { PermissionNotice } from "../permission-notice";
+import { UsageWorkspace } from "./usage-workspace";
 
 export default async function UsagePage() {
-  const [contracts, meters, events, aggregates] = await Promise.all([
+  const [context, contracts, meters, events, aggregates] = await Promise.all([
+    getAuthenticationContext(),
     listContracts(),
     listMeters(),
     listUsageEvents(),
     listUsageAggregates()
   ]);
-  const contractById = new Map(contracts.map((contract) => [contract.id, contract.customerName ?? contract.customerId]));
-  const meterById = new Map(meters.map((meter) => [meter.id, meter.name]));
+  const canWriteUsage = context.status === "ready" && hasCapability(context.actor, "usage.write");
+  const activeContracts = contracts.filter((contract) => contract.status === "active");
 
   return (
-    <main className="shell page-grid">
-      <section className="hero compact">
-        <p className="eyebrow">Usage</p>
-        <h1>Metered activity</h1>
-        <p className="lede">Ingest raw usage events, enforce active contract configuration, and inspect billable aggregates by meter.</p>
-      </section>
+    <WorkspaceShell activePath="/usage">
+      <main className="workspace-page page-grid">
+        <WorkflowPageHeader
+          breadcrumbs={[{ href: "/overview", label: "Overview" }, { label: "Operate" }]}
+          eyebrow="Operate"
+          title="Metered activity"
+          description="Ingest raw usage events, preserve idempotency, and inspect billable aggregates before invoice generation."
+        />
 
-      <section className="two-column">
-        <div className="stacked-forms">
-          <UsageEventForm contracts={contracts} meters={meters} />
-        </div>
+        <WorkflowGuide
+          title="Usage path"
+          items={[
+            { href: "/contracts", label: "Active contract", detail: `${activeContracts.length} active`, status: activeContracts.length > 0 ? "done" : "blocked" },
+            { href: "/catalog", label: "Meter", detail: `${meters.length} configured`, status: meters.length > 0 ? "done" : "blocked" },
+            { label: "Event intake", detail: `${events.length} accepted`, status: events.length > 0 ? "done" : activeContracts.length > 0 && meters.length > 0 ? "active" : "blocked" },
+            { label: "Aggregate", detail: `${aggregates.length} billable groups`, status: aggregates.length > 0 ? "done" : events.length > 0 ? "active" : "blocked" }
+          ]}
+        />
 
-        <div className="stacked-forms">
-          <div className="table-panel">
-            <div className="table-header">
-              <h2>Aggregates</h2>
-              <span>{aggregates.length} groups</span>
-            </div>
-            {aggregates.length === 0 ? (
-              <p className="empty-state">No usage aggregates yet.</p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Customer</th>
-                    <th>Meter</th>
-                    <th>Events</th>
-                    <th>Billable</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {aggregates.map((aggregate) => (
-                    <tr key={`${aggregate.contractId}-${aggregate.meterId}`}>
-                      <td>{aggregate.customerName ?? aggregate.contractId}</td>
-                      <td>{aggregate.meterName}</td>
-                      <td>{aggregate.eventCount}</td>
-                      <td>{aggregate.billableQuantity} {aggregate.unit}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+        {!canWriteUsage ? <PermissionNotice capability="usage.write" label="Usage ingestion" /> : null}
 
-          <div className="table-panel">
-            <div className="table-header">
-              <h2>Recent events</h2>
-              <span>{events.length} shown</span>
-            </div>
-            {events.length === 0 ? (
-              <p className="empty-state">No events ingested yet.</p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Contract</th>
-                    <th>Meter</th>
-                    <th>Quantity</th>
-                    <th>Occurred</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.map((event) => (
-                    <tr key={event.id}>
-                      <td>{contractById.get(event.contractId) ?? event.contractId}</td>
-                      <td>{meterById.get(event.meterId) ?? event.meterId}</td>
-                      <td>{event.quantity}</td>
-                      <td>{new Date(event.occurredAt).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      </section>
-    </main>
+        <UsageWorkspace canWrite={canWriteUsage} contracts={contracts} meters={meters} events={events} aggregates={aggregates} />
+
+        {aggregates.length > 0 ? <NextAction href="/invoices" title="Next: generate invoice">Use aggregate periods and active contracts to create draft invoices.</NextAction> : null}
+      </main>
+    </WorkspaceShell>
   );
 }

@@ -7,6 +7,16 @@
 - Keep invoice and revenue records explainable.
 - Support future contract amendments and versioning.
 - Preserve audit history for finance-impacting changes.
+- Enforce workspace isolation at both repository and database boundaries.
+
+## Workspace Ownership
+
+- `workspaces` and `workspace_memberships` map identity-provider organizations and users into RevFlow tenancy and roles.
+- Every tenant-owned domain table carries a non-null `workspace_id`; existing demo data belongs to the deterministic local workspace.
+- Repositories derive workspace ownership from authenticated request context. Request payloads cannot select or override it.
+- Workspace-scoped unique constraints allow separate customers and configurations to reuse natural identifiers safely.
+- Composite workspace-parent foreign keys reject cross-workspace references even if application validation is bypassed.
+- Queue jobs, audit events, AI reviews, and operational job runs preserve workspace and initiating-user attribution.
 
 ## Entity Groups
 
@@ -89,14 +99,14 @@ Entities -> Audit Logs
 
 ## Indexing Notes
 
-Planned important indexes:
+Important workspace-first indexes:
 
-- `usage_events(idempotency_key)` unique
-- `usage_events(meter_id, occurred_at)`
-- `usage_aggregates(contract_id, meter_id, period_start, period_end)`
-- `invoices(contract_id, period_start, period_end)`
-- `audit_logs(entity_type, entity_id, created_at)`
-- `job_runs(queue_name, status, created_at)`
+- `usage_events(workspace_id, idempotency_key)` unique
+- `usage_events(workspace_id, meter_id, occurred_at)`
+- `usage_aggregates(workspace_id, contract_id, meter_id, period_start, period_end)` unique
+- `invoices(workspace_id, contract_id, period_start, period_end)`
+- `audit_logs(workspace_id, entity_type, entity_id, created_at)`
+- `job_runs(workspace_id, queue_name, status, created_at)`
 
 ## Open Data Modeling Questions
 

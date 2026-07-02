@@ -41,6 +41,8 @@ npm run dev -w @revflow/worker
 
 Run migrations after starting Postgres and before using database-backed API routes. Run the seed script when you want demo-ready customers, catalog records, contracts, usage events, and audit events.
 
+Migration `009_add_workspace_scope.sql` makes all existing domain records workspace-owned. The demo seed is idempotent for its deterministic workspace. Production seeding is rejected unless `ALLOW_DEMO_SEED=true` is set explicitly.
+
 Usage aggregation can happen through the worker or manually:
 
 ```txt
@@ -68,6 +70,56 @@ npm run typecheck -w @revflow/db
 npm run typecheck -w @revflow/queues
 npm run typecheck -w @revflow/worker
 ```
+
+Tenant isolation tests use a real PostgreSQL database and are opt-in so the normal unit suite stays deterministic:
+
+```bash
+RUN_DATABASE_TESTS=true npm run test -w @revflow/api -- customers.tenant.test.ts
+```
+
+## Authentication Profiles
+
+### Deterministic Local Profile
+
+The default root environment uses AUTH_MODE=local. This mode is rejected in production and resolves:
+
+- User: local-user
+- Organization: local-org
+- Workspace: RevFlow Demo
+- Role: workspace_admin
+
+Migration 008 creates the matching workspace and membership. The web app does not require Clerk keys in this profile. Open http://localhost:3000/onboarding to inspect the resolved workspace.
+
+### Clerk Development Profile
+
+1. Create a Clerk application and enable Organizations.
+2. Put these values in the root .env for the Express API:
+
+    AUTH_MODE=clerk
+    CLERK_PUBLISHABLE_KEY=pk_test_...
+    CLERK_SECRET_KEY=sk_test_...
+
+3. Create apps/web/.env.local from apps/web/.env.example and set:
+
+    NEXT_PUBLIC_API_URL=http://localhost:4000
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+    CLERK_SECRET_KEY=sk_test_...
+    NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+    NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+
+4. Restart both API and web processes.
+5. Sign up or sign in, create/select a Clerk organization, and complete /onboarding.
+
+Clerk verifies identity and active organization. RevFlow creates its own workspace and membership, then derives role capabilities from that persisted membership. Domain requests never trust a client-provided workspace or role.
+
+The first member of a new organization becomes workspace_admin. A later organization admin is synchronized as workspace_admin; other organization members begin as finance_operator. Persisted RevFlow membership remains authoritative after onboarding.
+
+## Authentication Endpoints
+
+- GET /auth/context returns onboarding_required or the normalized actor/workspace context.
+- POST /auth/onboard creates or reconnects the active organization workspace membership.
+- All other domain API routes require a verified identity and active RevFlow membership.
+- GET /health and GET /health/db remain public.
 
 ## AI Extraction Demo Notes
 

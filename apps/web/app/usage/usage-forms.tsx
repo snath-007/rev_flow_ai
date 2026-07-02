@@ -84,6 +84,9 @@ export function UsageEventForm({ contracts, meters }: { contracts: ContractSumma
         <label htmlFor="idempotency-key">Idempotency key</label>
         <input id="idempotency-key" name="idempotencyKey" required placeholder="evt_001" />
       </div>
+      {activeContracts.length === 0 ? <p className="form-help">Activate a contract before ingesting usage.</p> : null}
+      {meters.length === 0 ? <p className="form-help">Configure a meter before ingesting usage.</p> : null}
+      <div className="consequence-note">The idempotency key prevents duplicate event ingestion for this workspace.</div>
       {error ? <p className="error-text">{error}</p> : null}
       <button disabled={isSubmitting || activeContracts.length === 0 || meters.length === 0} type="submit">
         {isSubmitting ? "Ingesting..." : "Ingest event"}
