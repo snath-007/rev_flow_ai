@@ -1,8 +1,8 @@
 .metric-grid,
 .overview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
 }
 
 .metric-panel,
@@ -10,18 +10,18 @@
 .evidence-strip,
 .visual-bars,
 .timeline-panel {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--panel-white), var(--panel));
-  box-shadow: var(--shadow);
+  border: 1px solid rgba(19, 38, 58, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 253, 247, 0.96), rgba(249, 242, 229, 0.9));
+  box-shadow: 0 14px 30px rgba(19, 38, 58, 0.07), 4px 5px 0 rgba(19, 38, 58, 0.045);
 }
 
 .metric-panel,
 .visual-metric-card {
   display: grid;
-  gap: 8px;
-  min-height: 132px;
-  padding: 16px;
+  gap: 12px;
+  min-height: 146px;
+  padding: 18px;
 }
 
 .metric-panel span,
@@ -82,32 +82,33 @@
 
 .evidence-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  overflow: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  gap: 12px;
+  padding: 14px;
 }
 
 .evidence-strip > div {
   display: grid;
-  gap: 8px;
-  min-height: 92px;
-  padding: 16px;
-  border-right: 1px solid var(--line-soft);
-}
-
-.evidence-strip > div:last-child {
-  border-right: 0;
+  gap: 12px;
+  min-height: 102px;
+  padding: 16px 17px;
+  border: 1px solid rgba(19, 38, 58, 0.12);
+  border-radius: 7px;
+  background: rgba(255, 252, 246, 0.76);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
 .evidence-strip strong {
   color: var(--navy);
   font-family: var(--font-mono);
   font-size: 22px;
+  line-height: 1.1;
 }
 
 .visual-bars {
   display: grid;
-  gap: 13px;
-  padding: 16px;
+  gap: 14px;
+  padding: 18px;
 }
 
 .visual-bars h2,
@@ -122,7 +123,7 @@
   display: grid;
   grid-template-columns: minmax(90px, 150px) minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
 }
 
 .bar-track {
@@ -153,19 +154,19 @@
 
 .timeline-panel {
   display: grid;
-  gap: 16px;
-  padding: 16px;
+  gap: 18px;
+  padding: 18px;
 }
 
 .timeline-list {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .timeline-item {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
-  gap: 10px;
+  gap: 16px;
 }
 
 .timeline-dot {
@@ -209,7 +210,7 @@
 .status-list,
 .activity-list {
   display: grid;
-  gap: 10px;
+  gap: 16px;
 }
 
 .status-list a,
@@ -251,22 +252,22 @@
 
 .pipeline-map {
   display: grid;
-  grid-template-columns: repeat(7, minmax(118px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(7, minmax(142px, 1fr));
+  gap: 14px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding: 4px 4px 12px;
 }
 
 .pipeline-node {
   position: relative;
   display: grid;
-  min-height: 158px;
+  min-height: 168px;
   align-content: start;
-  gap: 9px;
-  padding: 13px;
-  border: 1.5px solid rgba(19, 38, 58, 0.42);
-  border-radius: 6px;
-  background: rgba(255, 250, 240, 0.72);
+  gap: 11px;
+  padding: 16px;
+  border: 1px solid rgba(19, 38, 58, 0.28);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 252, 246, 0.9), rgba(250, 245, 234, 0.82));
   color: inherit;
   text-decoration: none;
   box-shadow: 5px 6px 0 rgba(19, 38, 58, 0.055);
@@ -275,7 +276,7 @@
 .pipeline-node:not(:last-child)::after {
   position: absolute;
   top: 50%;
-  right: -11px;
+  right: -13px;
   z-index: 2;
   color: var(--sketch-blue, var(--blue));
   content: "->";
@@ -326,21 +327,21 @@
 
 .queue-board,
 .donut-metric {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--panel-white), var(--panel));
-  box-shadow: var(--shadow);
+  border: 1px solid rgba(19, 38, 58, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 253, 247, 0.96), rgba(249, 242, 229, 0.9));
+  box-shadow: 0 14px 30px rgba(19, 38, 58, 0.07), 4px 5px 0 rgba(19, 38, 58, 0.045);
 }
 
 .queue-board {
   display: grid;
-  gap: 12px;
-  padding: 16px;
+  gap: 14px;
+  padding: 18px;
 }
 
 .queue-list {
   display: grid;
-  gap: 10px;
+  gap: 16px;
 }
 
 .queue-list > a,
@@ -349,11 +350,11 @@
   grid-template-columns: 54px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-  min-height: 64px;
-  padding: 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius);
-  background: rgba(255, 253, 247, 0.72);
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid rgba(19, 38, 58, 0.12);
+  border-radius: 7px;
+  background: rgba(255, 252, 246, 0.76);
   color: inherit;
   text-decoration: none;
 }
@@ -386,15 +387,15 @@
 .overview-insight-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .donut-metric {
   display: grid;
-  grid-template-columns: 86px minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 16px;
   align-items: center;
-  padding: 16px;
+  padding: 18px;
 }
 
 .donut-ring {

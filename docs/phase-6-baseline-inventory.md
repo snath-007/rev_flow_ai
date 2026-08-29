@@ -32,19 +32,19 @@ No pre-existing type or API test failure blocks Phase 6.
 
 ### Web Pages
 
-| Route | Current purpose | Phase 6 classification | Initial capability |
-| --- | --- | --- | --- |
-| `/` | Scaffold/dashboard and quick links | Protected workspace home | authenticated |
-| `/customers` | Customer list and create | Operator mutation | `customers.read/write` |
-| `/catalog` | Products, meters, plans, price rules | Configuration | `catalog.read/write` |
-| `/contracts` | Contract list, create, line items, approval | Configuration and approval | `contracts.read/write/approve` |
-| `/usage` | Usage events and ingestion | Operator mutation | `usage.read/write` |
-| `/invoices` | Invoice list and generation | Finance operation | `invoices.read/generate` |
-| `/invoices/[id]` | Invoice detail and approval | Finance approval | `invoices.read/approve` |
-| `/revenue` | Schedules, journal entries, generation | Finance operation/review | `revenue.read/generate` |
-| `/ai` | Extraction intake, review, apply | AI operation and approval | `ai.read/extract/review/apply` |
-| `/audit` | Audit inspection | Read-only control | `audit.read` |
-| `/ops` | Background job inspection | Read-only operations | `ops.read` |
+| Route            | Current purpose                             | Phase 6 classification     | Initial capability             |
+| ---------------- | ------------------------------------------- | -------------------------- | ------------------------------ |
+| `/`              | Scaffold/dashboard and quick links          | Protected workspace home   | authenticated                  |
+| `/customers`     | Customer list and create                    | Operator mutation          | `customers.read/write`         |
+| `/catalog`       | Products, meters, plans, price rules        | Configuration              | `catalog.read/write`           |
+| `/contracts`     | Contract list, create, line items, approval | Configuration and approval | `contracts.read/write/approve` |
+| `/usage`         | Usage events and ingestion                  | Operator mutation          | `usage.read/write`             |
+| `/invoices`      | Invoice list and generation                 | Finance operation          | `invoices.read/generate`       |
+| `/invoices/[id]` | Invoice detail and approval                 | Finance approval           | `invoices.read/approve`        |
+| `/revenue`       | Schedules, journal entries, generation      | Finance operation/review   | `revenue.read/generate`        |
+| `/ai`            | Extraction intake, review, apply            | AI operation and approval  | `ai.read/extract/review/apply` |
+| `/audit`         | Audit inspection                            | Read-only control          | `audit.read`                   |
+| `/ops`           | Background job inspection                   | Read-only operations       | `ops.read`                     |
 
 There are 15 Next.js proxy mutation routes. They currently forward application requests without a shared authenticated actor or workspace context.
 
@@ -52,24 +52,24 @@ There are 15 Next.js proxy mutation routes. They currently forward application r
 
 Public:
 
-| Endpoint | Capability |
-| --- | --- |
-| `GET /health` | public |
+| Endpoint         | Capability                  |
+| ---------------- | --------------------------- |
+| `GET /health`    | public                      |
 | `GET /health/db` | public deployment readiness |
 
 Tenant-protected groups:
 
-| Group | Endpoints | Initial capabilities |
-| --- | ---: | --- |
-| Customers | 3 | `customers.read/write` |
-| Catalog | 9 | `catalog.read/write` |
-| Contracts | 5 | `contracts.read/write/approve` |
-| Usage | 4 | `usage.read/write` |
-| Invoices | 4 | `invoices.read/generate/approve` |
-| Revenue | 3 | `revenue.read/generate` |
-| AI | 5 | `ai.read/extract/review/apply` |
-| Audit | 1 | `audit.read` |
-| Ops | 1 | `ops.read` |
+| Group     | Endpoints | Initial capabilities             |
+| --------- | --------: | -------------------------------- |
+| Customers |         3 | `customers.read/write`           |
+| Catalog   |         9 | `catalog.read/write`             |
+| Contracts |         5 | `contracts.read/write/approve`   |
+| Usage     |         4 | `usage.read/write`               |
+| Invoices  |         4 | `invoices.read/generate/approve` |
+| Revenue   |         3 | `revenue.read/generate`          |
+| AI        |         5 | `ai.read/extract/review/apply`   |
+| Audit     |         1 | `audit.read`                     |
+| Ops       |         1 | `ops.read`                       |
 
 Total: 35 domain endpoints plus 2 health endpoints.
 
@@ -196,9 +196,9 @@ Current keys:
 - `WEB_PORT`
 - `NEXT_PUBLIC_API_URL`
 - `AI_PROVIDER`
-- `OLLAMA_BASE_URL`
-- `OLLAMA_MODEL`
-- `OLLAMA_TIMEOUT_MS`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
+- `GEMINI_TIMEOUT_MS`
 
 Findings:
 
@@ -209,7 +209,7 @@ Findings:
 - No environment schema validates required production values at startup.
 - No identity-provider, trusted-origin, hosted-AI, rate-limit, or observability keys exist yet.
 - Docker Compose currently supplies local Postgres and Redis.
-- Ollama remains an optional local runtime and is unsuitable as an unauthenticated public endpoint.
+- Gemini requires server-side secret handling, quotas, and contract-data approval.
 
 ## Seed And Demo Ownership
 

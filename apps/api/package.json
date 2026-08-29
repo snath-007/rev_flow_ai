@@ -5,16 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.57",
     "@clerk/express": "^2.1.31",
     "@revflow/db": "0.1.0",
     "@revflow/queues": "0.1.0",
     "@revflow/shared": "0.1.0",
+    "ai": "^7.0.84",
     "cors": "^2.8.5",
     "express": "^4.21.1",
     "helmet": "^7.1.0",

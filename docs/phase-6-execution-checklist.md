@@ -29,7 +29,7 @@ Key constraints:
 - Derive workspace and user identity from the authenticated session. Never trust a client-supplied workspace ID for authorization.
 - Enforce RBAC and tenant scoping in the API, not only by hiding navigation in the web app.
 - Keep pricing, invoice, revenue, journal-entry, and reporting calculations deterministic.
-- Keep the `AiProvider` boundary. Local Ollama, deterministic mock, and a future hosted open-model adapter must remain interchangeable.
+- Keep the `AiProvider` boundary. Gemini and the deterministic mock must remain interchangeable.
 - Treat free-tier vendors as deployment choices, not domain architecture.
 - Preserve synchronous POC fallbacks until a hosted worker path is proven.
 - Add dependencies only when a milestone needs them and the existing stack cannot reasonably provide the capability.
@@ -70,7 +70,7 @@ Included after the release gate foundations:
 Attempt only after core acceptance:
 
 - NRR cohort reporting
-- Hosted open-model provider adapter
+- Additional hosted-model provider adapter
 - Queue-backed invoice or revenue jobs
 - Email invitation management beyond identity-provider defaults
 - Dashboard drill-down exports
@@ -93,13 +93,13 @@ Attempt only after core acceptance:
 
 Use these terms consistently:
 
-| Term | Meaning |
-| --- | --- |
-| User | Authenticated human operating RevFlow |
-| Workspace | Tenant/organization that owns RevFlow configuration and finance data |
-| Membership | User-to-workspace relationship with a role |
-| Customer | External account billed by a workspace |
-| Actor | User identity recorded on audit events |
+| Term       | Meaning                                                              |
+| ---------- | -------------------------------------------------------------------- |
+| User       | Authenticated human operating RevFlow                                |
+| Workspace  | Tenant/organization that owns RevFlow configuration and finance data |
+| Membership | User-to-workspace relationship with a role                           |
+| Customer   | External account billed by a workspace                               |
+| Actor      | User identity recorded on audit events                               |
 
 Do not use `customer` to mean the authenticated tenant.
 
@@ -107,12 +107,12 @@ Do not use `customer` to mean the authenticated tenant.
 
 Start with four workspace roles:
 
-| Role | Intended access |
-| --- | --- |
-| `workspace_admin` | Memberships, workspace settings, all operational workflows |
+| Role               | Intended access                                                               |
+| ------------------ | ----------------------------------------------------------------------------- |
+| `workspace_admin`  | Memberships, workspace settings, all operational workflows                    |
 | `finance_operator` | Customers, catalog, contracts, usage, invoices, revenue generation, AI intake |
-| `reviewer` | AI review/apply, contract approval, invoice approval, revenue review |
-| `auditor` | Read-only access to configuration, finance records, audit, ops, and reports |
+| `reviewer`         | AI review/apply, contract approval, invoice approval, revenue review          |
+| `auditor`          | Read-only access to configuration, finance records, audit, ops, and reports   |
 
 Server permissions should be capability-based even if roles are fixed:
 
@@ -136,20 +136,20 @@ This keeps a later custom-role model possible without rewriting route policy che
 
 The implementation milestone must validate current vendor limits before committing, but the preferred shape is:
 
-| Concern | Preferred direction |
-| --- | --- |
-| Identity | Clerk organizations/users as the leading candidate |
-| Web | Vercel-hosted Next.js |
-| API | A container or Node host suitable for an Express service |
-| Worker | Same host family as API, enabled only when Redis/background workflows are required |
-| Database | Managed PostgreSQL |
-| Redis | Managed Redis only when worker-backed paths are enabled |
-| AI | `mock` for deterministic public demo; optional hosted open-model adapter or protected remote Ollama endpoint |
-| Files | Object storage only when upload/OCR becomes real scope |
-| Content | Sanity only for future editorial content, not finance persistence |
-| Realtime backend | Convex is not needed while Postgres/API remain authoritative |
+| Concern          | Preferred direction                                                                |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Identity         | Clerk organizations/users as the leading candidate                                 |
+| Web              | Vercel-hosted Next.js                                                              |
+| API              | Vercel Express Function in a separate project from the web app                     |
+| Worker           | Same host family as API, enabled only when Redis/background workflows are required |
+| Database         | Managed PostgreSQL                                                                 |
+| Redis            | Managed Redis only when worker-backed paths are enabled                            |
+| AI               | Gemini for real-model extraction; `mock` for deterministic/offline demo behavior   |
+| Files            | Object storage only when upload/OCR becomes real scope                             |
+| Content          | Sanity only for future editorial content, not finance persistence                  |
+| Realtime backend | Convex is not needed while Postgres/API remain authoritative                       |
 
-A Vercel-only deployment is insufficient for the current Express API, long-running worker, Postgres, Redis, and local Ollama topology. Phase 6 should deploy components according to their runtime needs rather than forcing every process into one platform.
+The synchronous Express API fits a Vercel Function, but the optional BullMQ worker does not. The hosted demo therefore uses separate Vercel projects for web and API, Neon for Postgres, and omits Redis/worker until a persistent worker host is justified.
 
 ## Milestone 0 - Phase 5 Baseline And Inventory
 
@@ -204,7 +204,7 @@ Tasks:
 - Add an ADR for identity provider and session verification.
 - Add an ADR for workspace tenancy and ownership propagation.
 - Add an ADR for hosted deployment topology.
-- Add an ADR for online AI behavior: mock-only demo, hosted open model, or protected remote Ollama.
+- Add an ADR for online AI behavior: Gemini with bounded usage and a deterministic mock fallback.
 - Define exact POC formulas and data sources for MRR, ARR, revenue waterfall, AR aging, DSO, and optional NRR.
 - Define role-to-capability mappings.
 - Define audit actor fields and authentication metadata that may be stored safely.
@@ -632,54 +632,51 @@ Estimated effort: 8-14 hours.
 
 ## Milestone 10 - Integration And Export Boundaries
 
-Status: pending.
+Status: complete. 10A-10D added export DTOs, integration-run foundations, permission-controlled CSV/JSON endpoints, mock ERP/GL connector adapters, and production outbox guidance.
 
 Goal: demonstrate maintainable ERP/CRM integration design without building real external synchronization.
 
 Tasks:
 
-- Define versioned export DTOs for customers, invoices, payments, journal entries, and revenue schedules.
-- Add CSV/JSON export commands or endpoints.
-- Add an integration-run record with status, actor, timestamps, and error summary.
-- Add idempotency/export reference fields where future connectors need them.
-- Keep connector adapters outside domain services.
-- Add a mock ERP/GL export adapter.
-- Document webhook/outbox direction for production.
-- Avoid introducing Sanity, Convex, or a second source of truth.
+- [x] Define versioned export DTOs for customers, invoices, payments, journal entries, and revenue schedules.
+- [x] Add CSV/JSON export commands or endpoints.
+- [x] Add an integration-run record with status, actor, timestamps, and error summary.
+- [x] Add idempotency/export reference fields where future connectors need them.
+- [x] Keep connector adapters outside domain services.
+- [x] Add a mock ERP/GL export adapter.
+- [x] Document webhook/outbox direction for production.
+- [x] Avoid introducing Sanity, Convex, or a second source of truth.
 
 Acceptance criteria:
 
-- Exports are workspace-scoped and permission-controlled.
-- Exported journal entries remain deterministic records, not AI output.
-- Re-running an export has explicit duplicate/idempotency behavior.
-- Mock connector failures are visible and auditable.
+- [x] Exports are workspace-scoped and permission-controlled.
+- [x] Exported journal entries remain deterministic records, not AI output.
+- [x] Re-running an export has explicit duplicate/idempotency behavior.
+- [x] Mock connector failures are visible and auditable.
 
 Estimated effort: 4-7 hours.
 
 ## Milestone 11 - Hosted Deployment And CI
 
-Status: pending.
+Status: in progress. Neon and repository deployment configuration are complete; live Vercel projects and hosted verification remain.
 
 Goal: make the application safely accessible online with repeatable builds and migrations.
 
 Tasks:
 
-- Confirm final provider choices against current free-tier/runtime limits.
-- Deploy Next.js web separately from runtime components that need a persistent Node/container process.
-- Deploy the Express API with health checks.
-- Provision managed Postgres and apply migrations through an explicit release step.
-- Provision Redis/worker only if hosted async workflows are enabled.
-- Configure Clerk domains, callbacks, organizations, and production keys.
-- Choose public-demo AI behavior:
-  - deterministic mock, or
-  - hosted open-model adapter with quotas, or
-  - protected remote Ollama endpoint
-- Never expose an unauthenticated local Ollama service to the public internet.
-- Configure CORS, trusted origins, secure cookies/tokens, and environment validation.
-- Add CI for install, typecheck, tests, and build.
-- Add preview/production environment separation.
-- Add demo seed strategy that cannot overwrite production data.
-- Document rollback for application release and additive migrations.
+- [x] Confirm final provider choices against current free-tier/runtime limits.
+- [ ] Deploy Next.js web and Express API as separate Vercel projects from the same monorepo.
+- [ ] Verify the hosted Express API health checks.
+- [x] Provision managed Postgres and apply migrations through an explicit release step.
+- [x] Omit Redis/worker until a hosted async workflow requires them.
+- [ ] Configure Clerk domains, callbacks, organizations, and production keys for the hosted URLs.
+- [ ] Configure Gemini server credentials, rate limits, and a demo-wide budget in the hosted API project.
+- [x] Keep deterministic mock behavior available for offline or repeatable demos.
+- [x] Configure strict CORS, trusted origins, and environment validation.
+- [ ] Add CI for install, typecheck, tests, and build.
+- [x] Document Preview/Production environment separation.
+- [x] Add a demo seed strategy that cannot overwrite production data.
+- [x] Document rollback for application releases and additive migrations.
 
 Acceptance criteria:
 
@@ -795,7 +792,7 @@ Estimated effort: 4-7 hours.
 ### AI Regression
 
 - Mock provider determinism
-- Ollama/hosted adapter schema validation
+- Gemini adapter schema validation
 - Provider error persistence
 - Review decision requirements
 - Apply-to-draft activation guard
@@ -813,8 +810,8 @@ Estimated effort: 4-7 hours.
 
 ### Local Development
 
-- Mock AI by default
-- Optional local Ollama
+- Gemini AI by default when a key is configured
+- Deterministic mock for offline tests and demos
 - Docker Postgres/Redis
 - Seeded default workspace
 - Development identity keys
@@ -824,7 +821,7 @@ Estimated effort: 4-7 hours.
 - Real authentication
 - One or more isolated workspaces
 - Managed Postgres
-- Deterministic mock AI by default unless hosted inference is bounded
+- Gemini with bounded usage, or deterministic mock for a zero-cost demo
 - Synchronous finance workflows acceptable
 - Optional worker/Redis
 - Rate-limited seed/demo behavior

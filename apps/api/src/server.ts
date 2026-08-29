@@ -1,13 +1,7 @@
-import { loadEnv } from "./config/env.js";
+import app from "./index.js";
 
-loadEnv();
-
-import { createApp } from "./app.js";
-
-const port = Number(process.env.API_PORT ?? 4000);
-const app = createApp();
+const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
 
 app.listen(port, () => {
   console.log(`RevFlow API listening on http://localhost:${port}`);
 });
-

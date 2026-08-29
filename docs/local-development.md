@@ -5,7 +5,7 @@
 - Node.js 20+
 - npm
 - Docker Desktop or compatible Docker runtime
-- Optional: Ollama for local real-model contract extraction
+- A Google Gemini API key for real-model contract extraction
 
 ## Setup
 
@@ -95,17 +95,17 @@ Migration 008 creates the matching workspace and membership. The web app does no
 1. Create a Clerk application and enable Organizations.
 2. Put these values in the root .env for the Express API:
 
-    AUTH_MODE=clerk
-    CLERK_PUBLISHABLE_KEY=pk_test_...
-    CLERK_SECRET_KEY=sk_test_...
+   AUTH*MODE=clerk
+   CLERK_PUBLISHABLE_KEY=pk_test*...
+   CLERK*SECRET_KEY=sk_test*...
 
 3. Create apps/web/.env.local from apps/web/.env.example and set:
 
-    NEXT_PUBLIC_API_URL=http://localhost:4000
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-    CLERK_SECRET_KEY=sk_test_...
-    NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-    NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+   NEXT*PUBLIC_API_URL=http://localhost:4000
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test*...
+   CLERK*SECRET_KEY=sk_test*...
+   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 
 4. Restart both API and web processes.
 5. Sign up or sign in, create/select a Clerk organization, and complete /onboarding.
@@ -123,26 +123,20 @@ The first member of a new organization becomes workspace_admin. A later organiza
 
 ## AI Extraction Demo Notes
 
-The default `AI_PROVIDER=mock` is deterministic, requires no credentials, and is the recommended repeatable demo path.
-
-For local model inference:
-
-```bash
-ollama pull qwen2.5:3b
-```
-
-Set these values in the root `.env` and restart the API:
+Gemini is the default real-model provider. Set these values in the root `.env` and restart the API:
 
 ```env
-AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
-OLLAMA_TIMEOUT_MS=120000
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_google_ai_studio_key
+GEMINI_MODEL=gemini-3.6-flash
+GEMINI_TIMEOUT_MS=60000
 ```
+
+The API key stays server-side and must never use a `NEXT_PUBLIC_` prefix. For deterministic offline tests or demos, set `AI_PROVIDER=mock`; that provider requires no credentials and makes no network requests.
 
 The API development script loads the root `.env`. Open `/ai`, paste contract text, inspect source snippets and confidence, explicitly accept/edit/reject every field, then approve or reject the extraction. Applying an approved extraction creates or matches a customer and creates a draft contract only; normal contract approval remains the activation gate.
 
-Run `npm run db:migrate` before using this workflow because migration `007_create_ai_extraction_runs.sql` creates the extraction and review tables. Pointing `OLLAMA_BASE_URL` at another host sends the pasted contract text to that host.
+Run `npm run db:migrate` before using this workflow because migration `007_create_ai_extraction_runs.sql` creates the extraction and review tables. When Gemini is enabled, pasted contract text is sent to the Google Gemini API.
 
 ## Revenue Recognition Demo Notes
 

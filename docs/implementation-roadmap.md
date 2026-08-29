@@ -91,7 +91,7 @@ Goal: convert unstructured commercial text into traceable, human-reviewed draft 
 - Shared structured extraction schemas
 - Provider-neutral adapter interface
 - Deterministic mock provider
-- Opt-in local Ollama provider
+- Direct Gemini API provider
 - Confidence, ambiguity, missing-field, and source-snippet visibility
 - `/ai` review workspace with accept, edit, and reject decisions
 - Extraction approval/rejection and conservative apply workflow
@@ -112,7 +112,7 @@ Module notes: [AI-Assisted Contract Extraction](./modules/ai-extraction.md)
 
 ## Phase 6 - Productization, Reporting, And Deployment
 
-Status: planned.
+Status: in progress. Core productization is implemented; live deployment and hardening remain.
 
 Goal: turn the functional POC into a coherent, access-controlled, deployable product demonstration.
 

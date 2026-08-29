@@ -8,7 +8,7 @@ import type {
   AiExtractionSourceType,
   AiExtractionStatus,
   CreateAiExtractionInput,
-  ReviewAiExtractionInput
+  ReviewAiExtractionInput,
 } from "@revflow/shared";
 
 import { getRequiredWorkspaceId } from "../../lib/request-context.js";
@@ -37,7 +37,6 @@ type ExtractionRunRow = {
   updated_at: Date;
 };
 
-
 type ExtractionReviewRow = {
   id: string;
   extraction_run_id: string;
@@ -62,7 +61,7 @@ function toExtractionReview(row: ExtractionReviewRow): AiExtractionReview {
     notes: row.notes,
     completedAt: row.completed_at?.toISOString() ?? null,
     createdAt: row.created_at.toISOString(),
-    updatedAt: row.updated_at.toISOString()
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 const extractionRunColumns = `
@@ -107,7 +106,7 @@ function toExtractionRun(row: ExtractionRunRow): AiExtractionRun {
     appliedContractId: row.applied_contract_id,
     appliedAt: row.applied_at?.toISOString() ?? null,
     createdAt: row.created_at.toISOString(),
-    updatedAt: row.updated_at.toISOString()
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 
@@ -152,7 +151,7 @@ export async function getExtractionRunById(id: string) {
 export async function createExtractionRun(
   input: CreateAiExtractionInput,
   provider: string,
-  promptVersion: string
+  promptVersion: string,
 ) {
   const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
@@ -211,7 +210,10 @@ export async function markExtractionRunExtracting(id: string) {
   }
 }
 
-export async function completeExtractionRun(id: string, result: ContractExtractionResult) {
+export async function completeExtractionRun(
+  id: string,
+  result: ContractExtractionResult,
+) {
   const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
@@ -262,7 +264,10 @@ export async function failExtractionRun(id: string, errorMessage: string) {
     await sql.end({ timeout: 5 });
   }
 }
-export async function reviewExtractionRun(id: string, input: ReviewAiExtractionInput) {
+export async function reviewExtractionRun(
+  id: string,
+  input: ReviewAiExtractionInput,
+) {
   const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
@@ -281,7 +286,11 @@ export async function reviewExtractionRun(id: string, input: ReviewAiExtractionI
         return "AI_EXTRACTION_NOT_FOUND" as const;
       }
 
-      if (existing.status !== "extracted" && existing.status !== "reviewing") {
+      if (
+        existing.status !== "extracted" &&
+        existing.status !== "reviewing" &&
+        existing.status !== "approved"
+      ) {
         return "AI_EXTRACTION_NOT_REVIEWABLE" as const;
       }
 
@@ -334,7 +343,7 @@ export async function reviewExtractionRun(id: string, input: ReviewAiExtractionI
 
       return {
         run: toExtractionRun(runRow),
-        review: toExtractionReview(reviewRow)
+        review: toExtractionReview(reviewRow),
       };
     });
   } finally {

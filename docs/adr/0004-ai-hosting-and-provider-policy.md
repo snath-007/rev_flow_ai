@@ -5,21 +5,20 @@ Date: 2026-06-24
 
 ## Context
 
-Phase 5 introduced an AiProvider boundary with deterministic mock and Ollama implementations. AI extraction remains draft-only and requires human review before applying configuration.
+Phase 5 introduced an AiProvider boundary with deterministic mock and local-model implementations. The current implementation replaces the local-model adapter with direct Google Gemini API access. AI extraction remains draft-only and requires human review before applying configuration.
 
-A public demo must not depend on an operator's laptop, expose an unauthenticated Ollama endpoint, or create unbounded model cost. It should still demonstrate provider neutrality and the complete review workflow.
+A public demo must not depend on an operator's laptop or create unbounded model cost. It should still demonstrate provider neutrality and the complete review workflow.
 
 ## Decision
 
-Use deterministic mock extraction as the default hosted-demo AI behavior.
+Use Gemini as the default real-model extraction provider and retain deterministic mock extraction for tests, offline development, and repeatable demos.
 
 Keep the provider contract unchanged:
 
-- mock: deterministic local, test, and public-demo behavior
-- ollama: local open-model development
-- hosted_open_model: optional future adapter behind the same contract
+- gemini: direct Google Gemini API access authenticated with a server-side API key
+- mock: deterministic local, test, and repeatable-demo behavior
 
-The hosted_open_model adapter is stretch scope. It may target any bounded provider capable of returning the required structured schema. Domain services must not branch on vendor-specific response objects.
+Domain services must not branch on vendor-specific response objects.
 
 ## Safety And Workflow Rules
 
@@ -34,7 +33,7 @@ The hosted_open_model adapter is stretch scope. It may target any bounded provid
 
 ## Hosted Controls
 
-If a hosted model adapter is enabled:
+When Gemini is enabled:
 
 - Require authentication and ai.extract capability.
 - Apply per-user and per-workspace rate limits.
@@ -44,27 +43,26 @@ If a hosted model adapter is enabled:
 - Do not retry non-idempotent provider calls without an extraction-run idempotency key.
 - Fall back visibly; never silently replace failed AI output with invented terms.
 - Keep a demo-wide budget or quota.
-
-Ollama remains bound to local or protected private infrastructure. It is never exposed directly to the public internet as an unauthenticated RevFlow dependency.
+- Keep `GEMINI_API_KEY` server-side and out of logs, browser bundles, and committed files.
+- Send contract text only when the workspace is approved to use Google Gemini.
 
 ## Consequences
 
 Benefits:
 
-- The hosted demo is deterministic and inexpensive.
-- The review experience can be evaluated without model availability.
-- Open-source local inference remains supported.
+- Real-model extraction works without local inference infrastructure.
+- The review experience can still be evaluated without model availability by selecting the mock provider.
 - A later provider can be added without changing contract workflows.
 
 Costs:
 
-- Public-demo extraction is illustrative rather than generative.
-- Hosted open-model latency and quality are not proven in core scope.
-- Provider-specific optimization is deliberately deferred.
+- Gemini usage introduces external cost, latency, quotas, and data-processing considerations.
+- Public demos require rate limits and budget controls.
+- Provider-specific optimization is deliberately limited to the adapter.
 
 ## Rejected Alternatives
 
-- Public remote Ollama endpoint: unsafe and operationally fragile.
+- Self-hosted local-model endpoint: unnecessary operational complexity for the current phase.
 - Hard-coded hosted vendor SDK in the AI service: breaks provider neutrality.
 - Autonomous apply or approval: conflicts with the finance control model.
 - Convex as an AI orchestration layer: duplicates API and persistence responsibilities.

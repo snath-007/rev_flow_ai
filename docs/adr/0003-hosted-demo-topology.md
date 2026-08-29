@@ -1,97 +1,102 @@
 # ADR 0003 - Hosted Demo Topology
 
 Status: accepted  
-Date: 2026-06-24
+Date: 2026-08-29
 
 ## Context
 
-RevFlow contains a Next.js web app, a persistent Express API, PostgreSQL access, an optional BullMQ worker and Redis, and optional Ollama inference. These components do not share identical runtime requirements.
+RevFlow contains a Next.js web app, an Express API, PostgreSQL access, an optional BullMQ worker and Redis, and Gemini API inference. The hosted proof of concept needs a low-cost, reproducible deployment without presenting free-tier infrastructure as a production SLA.
 
-The hosted POC should remain inexpensive and reproducible without forcing every process into one vendor or presenting the design as production scale.
+The implemented demo workflows can run synchronously through the API. The optional BullMQ consumer still requires a persistent worker runtime and is not compatible with a request-scoped function lifecycle.
 
 ## Decision
 
-Use a split-runtime hosted-demo topology:
+Use two Vercel projects from the same monorepo, with external managed services:
 
-| Concern | Decision |
-| --- | --- |
-| Public site and web application | Vercel-hosted Next.js |
-| API | Container-capable Node host with an always-addressable HTTPS service |
-| Database | Managed PostgreSQL |
-| Identity | Clerk |
-| Worker and Redis | Omit initially; enable only when a hosted asynchronous path is required |
-| AI | Deterministic mock by default; bounded hosted adapter is optional |
-| Files | No object storage until upload or OCR enters scope |
+| Concern                         | Decision                                                                                       |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Public site and web application | Vercel Next.js project rooted at `apps/web`                                                    |
+| API                             | Vercel Express Function project rooted at `apps/api`                                           |
+| Database                        | Neon PostgreSQL; pooled runtime connection and direct migration connection                     |
+| Identity                        | Clerk production instance                                                                      |
+| AI                              | Gemini through the provider-neutral API boundary; deterministic mock remains available offline |
+| Worker and Redis                | Omit from the first hosted demo                                                                |
+| Files                           | No object storage until upload or OCR enters scope                                             |
 
-Vercel is selected for the Next.js surface, not as a requirement to convert the existing Express API and worker into functions. The exact container and managed-Postgres vendors are deployment configuration choices finalized in Milestone 11 after checking current free-tier limits.
+The API exports its Express application from `src/index.ts`; local development continues to use `src/server.ts`. The function duration is explicitly longer than the Gemini client timeout so provider failures can be returned by the application instead of being cut off by the platform first.
 
 ## Runtime Flow
 
-- Browser requests public and authenticated pages from Vercel.
+- Browser requests public and authenticated pages from the Vercel web project.
+- Next.js server routes call the separately deployed API URL.
 - Authenticated API calls carry a Clerk session token to Express.
-- Express verifies identity, resolves the RevFlow workspace and membership, then accesses managed PostgreSQL.
-- Synchronous POC paths remain available for usage aggregation, invoice generation, and revenue generation.
-- Redis and the worker are deployed only after a hosted queue use case is proven.
-- The browser never receives database credentials, identity secrets, or AI provider secrets.
+- Express verifies identity, resolves the RevFlow workspace and membership, then accesses Neon using its pooled connection.
+- Gemini calls remain server-side and all extracted fields require human review before they can create draft records.
+- Billing, revenue, payment, reporting, and export workflows use their synchronous paths for the hosted demo.
+- The browser never receives database credentials, Clerk secrets, or AI provider secrets.
 
 ## Environment Profiles
 
 Local development:
 
-- Docker PostgreSQL and Redis
-- Mock AI by default
-- Optional local Ollama
-- Clerk development keys
-- Worker available
+- Local or Neon PostgreSQL
+- Gemini by default with deterministic mock available
+- Clerk development keys or explicit local authentication mode
+- Redis and worker available when required
 
 Hosted demo:
 
-- Vercel web
-- Container-hosted API
-- Managed PostgreSQL
-- Mock AI by default
-- Worker and Redis optional
-- Rate-limited seeded workspaces
+- Separate Vercel web and API projects
+- Neon PostgreSQL
+- Clerk production keys
+- Gemini with a bounded timeout and provider quota
+- Worker and Redis omitted
 
-Production-forward documentation:
+Production-forward direction:
 
-- Independent API and worker scaling
-- Managed queue or Redis
-- Backups, restore testing, retention, alerting, and outbox patterns
-- Object storage and OCR
+- Independent API and worker scaling when workload requires it
+- Managed queue or Redis with durable retry and dead-letter behavior
+- Database backups, restore testing, retention, alerting, and outbox patterns
+- Object storage and OCR for document ingestion
 - Real payment and ERP connectors
 
 ## Deployment Constraints
 
-- Database migrations run as an explicit release task, never implicitly from a web request.
-- Preview and production environments use separate databases and identity keys.
+- Database migrations run as an explicit release task, never from a web request or application startup.
+- Preview and production environments use separate database and identity resources.
 - CORS permits only configured web origins.
 - Health checks distinguish process liveness from database readiness.
 - Seed commands refuse production unless a separate explicit safeguard is enabled.
-- Provider free tiers are treated as replaceable cost choices, not architecture.
+- Secrets are configured independently in each Vercel project and never committed.
+- The optional BullMQ worker is not deployed to Vercel Functions.
+- Provider free tiers are replaceable cost choices, not domain architecture.
 
 ## Consequences
 
 Benefits:
 
-- Each component runs in an environment suited to its lifecycle.
-- The existing monorepo and Express boundary remain valid.
-- The hosted POC can omit Redis and worker costs until needed.
-- Vendor replacement remains practical.
+- Web and API deployments remain isolated while sharing one repository.
+- Express and its route structure remain intact.
+- The hosted demo avoids a third application host and omits idle worker costs.
+- Runtime database access uses Neon's pooled endpoint.
 
 Costs:
 
-- Deployment spans more than one vendor.
-- Cross-origin authentication and CORS require careful configuration.
-- The API host may sleep or throttle on a free tier.
+- Cross-origin authentication and CORS require coordinated URLs.
+- Two Vercel projects require separate environment-variable management.
+- Function execution limits constrain long-running AI requests and unsuitable background work.
+- A future asynchronous worker still needs another runtime.
 
 ## Rejected Alternatives
 
-- Vercel only: does not naturally match the current persistent API, worker, Redis, and local-model topology.
-- One large virtual machine: simpler at first, but weaker isolation, repeatability, and free-tier fit.
+- One Vercel project for both apps: weakens independent environment, domain, and deployment control.
+- Deploy the BullMQ worker as a Vercel Function: request-scoped functions cannot act as a continuously running queue consumer.
+- One large virtual machine: simpler initially, but weaker isolation, repeatability, and free-tier fit.
 - Sanity as the backend: unsuitable for authoritative relational finance state.
 - Convex beside Postgres: adds a second application backend without a demonstrated need.
 
 ## References
 
-- Vercel function limits: https://vercel.com/docs/functions/limitations
+- [Vercel Express guide](https://vercel.com/docs/frameworks/backend/express)
+- [Vercel monorepo projects](https://vercel.com/docs/monorepos)
+- [Vercel function duration](https://vercel.com/docs/functions/configuring-functions/duration)
