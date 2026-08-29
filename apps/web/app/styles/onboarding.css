@@ -1,0 +1,185 @@
+.workspace-ready-page {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  overflow: hidden;
+  place-items: center;
+  padding: 64px 24px;
+  color: var(--sketch-ink);
+  background:
+    radial-gradient(circle at 76% 8%, rgba(182, 90, 59, 0.08), transparent 28%),
+    radial-gradient(circle at 12% 30%, rgba(25, 79, 131, 0.08), transparent 30%),
+    linear-gradient(90deg, rgba(182, 90, 59, 0.42) 0 1px, transparent 1px 100%),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(19, 38, 58, 0.055) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(19, 38, 58, 0.028) 31px 32px),
+    var(--sketch-paper);
+  background-position: 0 0, 0 0, 72px 0, 0 0, 0 0, 0 0;
+  font-family: var(--sketch-mono);
+}
+
+.workspace-ready-page::before {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.52;
+  background-image:
+    radial-gradient(rgba(19, 38, 58, 0.16) 0.65px, transparent 0.65px),
+    linear-gradient(115deg, transparent 0 46%, rgba(255, 255, 255, 0.28) 47% 49%, transparent 50% 100%);
+  background-size: 9px 9px, 100% 100%;
+  content: "";
+  mix-blend-mode: multiply;
+}
+
+.workspace-ready-page::after {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(19, 38, 58, 0.08) 0 1px, transparent 1px 100%),
+    linear-gradient(90deg, rgba(19, 38, 58, 0.04) 0 1px, transparent 1px 100%);
+  background-position: 56px 0, 58px 0;
+  background-size: 100% 100%;
+  content: "";
+}
+
+.workspace-ready-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  width: min(820px, 100%);
+  text-align: center;
+}
+
+.workspace-ready-stamp {
+  display: grid;
+  width: 150px;
+  height: 150px;
+  place-items: center;
+  border: 2px dashed var(--sketch-rust);
+  border-radius: 999px;
+  color: var(--sketch-rust);
+  font-family: var(--sketch-mono);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-transform: uppercase;
+  transform: rotate(-8deg);
+}
+
+.workspace-ready-eyebrow {
+  position: relative;
+  margin: 34px 0 20px;
+  color: var(--sketch-rust);
+  font-family: var(--sketch-mono);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.workspace-ready-eyebrow::before {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 10px;
+  background: var(--sketch-rust);
+  content: "";
+}
+
+.workspace-ready-copy h1 {
+  margin: 0;
+  color: var(--sketch-ink);
+  font-family: var(--sketch-mono);
+  font-size: clamp(46px, 5vw, 72px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+.workspace-ready-rule {
+  width: min(280px, 62vw);
+  height: 16px;
+  margin: 24px 0 14px;
+  background: repeating-linear-gradient(-8deg, transparent 0 22px, var(--sketch-rust) 22px 26px, transparent 26px 44px);
+  clip-path: polygon(0 48%, 8% 35%, 16% 54%, 25% 36%, 34% 54%, 43% 36%, 52% 54%, 61% 36%, 70% 54%, 79% 36%, 88% 54%, 100% 40%, 100% 64%, 88% 76%, 79% 58%, 70% 76%, 61% 58%, 52% 76%, 43% 58%, 34% 76%, 25% 58%, 16% 76%, 8% 58%, 0 70%);
+  opacity: 0.95;
+}
+
+.workspace-ready-copy p:not(.workspace-ready-eyebrow) {
+  max-width: 830px;
+  margin: 0;
+  color: var(--sketch-ink-soft);
+  font-size: clamp(17px, 1.55vw, 21px);
+  line-height: 1.55;
+}
+
+.workspace-ready-action {
+  min-height: 48px;
+  margin-top: 34px;
+  border: 1.5px solid var(--sketch-ink);
+  border-radius: 2px;
+  background: var(--sketch-blue);
+  padding: 0 18px;
+  color: #fffaf0;
+  font-family: var(--sketch-mono);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 5px 5px 0 rgba(19, 38, 58, 0.12);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.workspace-ready-action:hover,
+.workspace-ready-action:focus-visible {
+  background: var(--sketch-blue);
+  box-shadow: 7px 7px 0 rgba(19, 38, 58, 0.14);
+  transform: translate(-2px, -2px);
+}
+
+.workspace-ready-trust {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 26px;
+  margin-top: 48px;
+  color: var(--sketch-ink-soft);
+  font-size: 14px;
+}
+
+.workspace-ready-trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.workspace-ready-trust span::before {
+  width: 7px;
+  height: 12px;
+  border-right: 1.5px solid var(--sketch-blue);
+  border-bottom: 1.5px solid var(--sketch-blue);
+  content: "";
+  transform: rotate(42deg);
+}
+
+@media (max-width: 680px) {
+  .workspace-ready-page {
+    padding: 42px 18px;
+  }
+
+  .workspace-ready-stamp {
+    width: 118px;
+    height: 118px;
+    font-size: 13px;
+  }
+
+  .workspace-ready-trust {
+    align-items: center;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 34px;
+  }
+}
