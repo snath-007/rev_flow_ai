@@ -82,6 +82,17 @@ Do not add the direct migration URL to the API project unless an explicit releas
 
 Values prefixed with `NEXT_PUBLIC_` are included in browser bundles. Never use that prefix for database, Clerk secret, or Gemini credentials.
 
+### Secret-handling inventory
+
+| Scope                   | Secrets                                                              | Non-secret configuration                                                                                                  |
+| ----------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| API runtime             | `DATABASE_URL_POOLED`, `CLERK_SECRET_KEY`, `GEMINI_API_KEY`          | `AUTH_MODE`, `CLERK_PUBLISHABLE_KEY`, `AI_PROVIDER`, `GEMINI_MODEL`, `GEMINI_TIMEOUT_MS`, `WEB_ORIGIN`, `ALLOW_DEMO_SEED` |
+| Web runtime             | `CLERK_SECRET_KEY`                                                   | All required `NEXT_PUBLIC_*` values; these are intentionally browser-visible                                              |
+| Migration/release shell | `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, or `DATABASE_MIGRATION_URL` | Release commands and migration names                                                                                      |
+| Optional worker         | Credential-bearing `REDIS_URL`                                       | Queue and worker runtime settings                                                                                         |
+
+The tracked `.env.example` is the canonical full inventory. `apps/web/.env.example` is only the subset needed when the Next.js workspace is run or configured independently.
+
 ## 4. Preview Environment Policy
 
 Do not point arbitrary pull-request previews at production Neon or Clerk resources. Either:
