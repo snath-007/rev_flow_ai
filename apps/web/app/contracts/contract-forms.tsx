@@ -67,6 +67,7 @@ export function ContractCreateForm({ customers }: { customers: Customer[] }) {
           <input id="end-date" name="endDate" type="date" />
         </div>
       </div>
+      {customers.length === 0 ? <p className="form-help">Create a customer before drafting a contract.</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
       <button disabled={isSubmitting || customers.length === 0} type="submit">
         {isSubmitting ? "Creating..." : "Create draft"}
@@ -135,6 +136,8 @@ export function ContractLineItemForm({ contracts, priceRules }: { contracts: Con
         <label htmlFor="line-name">Line item name</label>
         <input id="line-name" name="name" required placeholder="Usage charges" />
       </div>
+      {draftContracts.length === 0 ? <p className="form-help">Create a draft contract before adding line items.</p> : null}
+      {priceRules.length === 0 ? <p className="form-help">Create a price rule before adding contract line items.</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
       <button disabled={isSubmitting || draftContracts.length === 0 || priceRules.length === 0} type="submit">
         {isSubmitting ? "Adding..." : "Add line item"}
@@ -153,6 +156,11 @@ export function ContractApproveForm({ contracts }: { contracts: ContractSummary[
     setIsSubmitting(true);
 
     const contractId = String(formData.get("contractId") ?? "");
+
+    if (!window.confirm("Approve this contract and make it active for billing, usage, invoice, and revenue workflows?")) {
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const response = await fetch(`/api/contracts/${contractId}/approve`, {
@@ -183,6 +191,8 @@ export function ContractApproveForm({ contracts }: { contracts: ContractSummary[
           ))}
         </select>
       </div>
+      {approvableContracts.length === 0 ? <p className="form-help">Only draft contracts with at least one line item can be approved.</p> : null}
+      <div className="consequence-note">Approval activates this contract for usage aggregation and invoice generation.</div>
       {error ? <p className="error-text">{error}</p> : null}
       <button disabled={isSubmitting || approvableContracts.length === 0} type="submit">
         {isSubmitting ? "Approving..." : "Approve contract"}

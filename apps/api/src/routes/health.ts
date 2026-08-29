@@ -7,11 +7,11 @@ healthRouter.get("/", (_req, res) => {
   res.status(200).json({
     service: "revflow-api",
     status: "ok",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-healthRouter.get("/db", async (_req, res, next) => {
+healthRouter.get("/db", async (_req, res) => {
   try {
     const connected = await checkDatabaseConnection();
 
@@ -19,10 +19,14 @@ healthRouter.get("/db", async (_req, res, next) => {
       service: "revflow-api",
       dependency: "postgres",
       status: connected ? "ok" : "unavailable",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    next(error);
+  } catch {
+    res.status(503).json({
+      service: "revflow-api",
+      dependency: "postgres",
+      status: "unavailable",
+      timestamp: new Date().toISOString(),
+    });
   }
 });
-

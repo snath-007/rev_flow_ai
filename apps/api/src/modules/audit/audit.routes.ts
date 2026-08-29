@@ -1,10 +1,12 @@
-﻿import { Router } from "express";
+import { Router } from "express";
+
+import { requireCapability } from "../../lib/authorization.js";
 
 import * as auditService from "./audit.service.js";
 
 export const auditRouter = Router();
 
-auditRouter.get("/", async (_req, res, next) => {
+auditRouter.get("/", requireCapability("audit.read"), async (_req, res, next) => {
   try {
     const auditLogs = await auditService.listAuditLogs();
     res.status(200).json({ auditLogs });

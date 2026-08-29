@@ -35,7 +35,11 @@ async function getAppliedMigrationIds(sql: ReturnType<typeof createSqlClient>) {
 }
 
 async function run() {
-  const sql = createSqlClient();
+  const sql = createSqlClient(
+    process.env.DATABASE_URL_UNPOOLED ??
+      process.env.DATABASE_MIGRATION_URL ??
+      process.env.DATABASE_URL,
+  );
 
   try {
     await ensureMigrationsTable(sql);
@@ -51,7 +55,10 @@ async function run() {
         continue;
       }
 
-      const migrationSql = await readFile(path.join(migrationsDir, file), "utf8");
+      const migrationSql = await readFile(
+        path.join(migrationsDir, file),
+        "utf8",
+      );
 
       await sql.begin(async (tx) => {
         await tx.unsafe(migrationSql);
@@ -74,4 +81,3 @@ run().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-

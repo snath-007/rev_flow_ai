@@ -1,5 +1,7 @@
-﻿import { createSqlClient } from "@revflow/db";
+import { createSqlClient } from "@revflow/db";
 import type { AuditLog } from "@revflow/shared";
+
+import { getAuthenticatedActor, getRequiredWorkspaceId } from "../../lib/request-context.js";
 
 type AuditLogRow = {
   id: string;
@@ -19,6 +21,7 @@ export type AuditLogInput = {
   beforeState?: unknown;
   afterState?: unknown;
   actor?: string;
+  workspaceId?: string;
 };
 
 function toAuditLog(row: AuditLogRow): AuditLog {
@@ -35,12 +38,14 @@ function toAuditLog(row: AuditLogRow): AuditLog {
 }
 
 export async function listAuditLogs() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<AuditLogRow[]>`
       select id, entity_type, entity_id, action, before_state, after_state, actor, created_at
       from audit_logs
+      where workspace_id = ${workspaceId}
       order by created_at desc
       limit 100
     `;
@@ -58,22 +63,42 @@ export async function createAuditLog(input: AuditLogInput) {
     const beforeState = input.beforeState === undefined ? null : sql.json(input.beforeState as never);
     const afterState = input.afterState === undefined ? null : sql.json(input.afterState as never);
 
+    const authenticatedActor = getAuthenticatedActor();
+    const actor = authenticatedActor?.displayName ?? authenticatedActor?.externalUserId ?? input.actor ?? "system";
+    const workspaceId = input.workspaceId ?? authenticatedActor?.workspaceId;
+
+    if (!workspaceId) {
+      throw new Error("workspaceId is required for audit writes");
+    }
+
     await sql`
       insert into audit_logs (
+        workspace_id,
         entity_type,
         entity_id,
         action,
         before_state,
         after_state,
-        actor
+        actor,
+        actor_type,
+        actor_external_user_id,
+        actor_membership_id,
+        actor_role,
+        auth_provider
       )
       values (
+        ${workspaceId},
         ${input.entityType},
         ${input.entityId},
         ${input.action},
         ${beforeState},
         ${afterState},
-        ${input.actor ?? "system"}
+        ${actor},
+        ${authenticatedActor ? "user" : "system"},
+        ${authenticatedActor?.externalUserId ?? null},
+        ${authenticatedActor?.membershipId ?? null},
+        ${authenticatedActor?.role ?? null},
+        ${authenticatedActor?.authProvider ?? "system"}
       )
     `;
   } finally {

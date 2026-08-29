@@ -1,4 +1,4 @@
-﻿import { Queue, type ConnectionOptions, type JobsOptions } from "bullmq";
+import { Queue, type ConnectionOptions, type JobsOptions } from "bullmq";
 
 import { getRedisConnectionOptions } from "./connection.js";
 import type { UsageAggregationJob } from "./jobs.js";
@@ -29,7 +29,7 @@ export async function enqueueUsageAggregationJob(
 
   try {
     return await queue.add("usage.aggregate", data, {
-      jobId: options.jobId ?? `usage.aggregate:${data.contractId}:${data.meterId}:${data.periodStart}:${data.periodEnd}`
+      jobId: options.jobId ?? `usage.aggregate:${data.workspaceId}:${data.contractId}:${data.meterId}:${data.periodStart}:${data.periodEnd}`
     });
   } finally {
     await queue.close();

@@ -11,7 +11,7 @@ AI output is never treated as active billing configuration.
 ```txt
 Paste contract text
   -> create extraction run
-  -> selected mock or Ollama provider extracts fields
+  -> selected Gemini or mock provider extracts fields
   -> validate structured output
   -> store confidence, ambiguity, source evidence, provider/model/prompt metadata
   -> human accepts, edits, or rejects each field
@@ -22,28 +22,18 @@ Paste contract text
 
 ## Current Provider
 
-The deterministic mock remains the default:
+Gemini is the default real-model provider:
 
 ```env
-AI_PROVIDER=mock
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_google_ai_studio_key
+GEMINI_MODEL=gemini-3.6-flash
+GEMINI_TIMEOUT_MS=60000
 ```
 
-It does not call a model, require credentials, or send contract text over the network. This keeps local development, tests, and demos repeatable.
+The Gemini adapter calls Google's API with a server-side key and requests schema-constrained output. Every response is validated against the same shared extraction schema used by the mock provider. Restart the API after changing provider settings.
 
-An Ollama adapter provides the first opt-in real-model path. It uses Ollama's local HTTP API and validates every response against the same shared extraction schema used by the mock provider.
-
-```bash
-ollama pull qwen2.5:3b
-```
-
-```env
-AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
-OLLAMA_TIMEOUT_MS=120000
-```
-
-Restart the API after changing these values. No hosted-provider API key is required.
+The deterministic mock remains available with `AI_PROVIDER=mock`. It does not call a model, require credentials, or send contract text over the network, which keeps tests and repeatable demos independent of external availability.
 
 The provider boundary remains vendor-neutral:
 
@@ -55,9 +45,9 @@ The provider boundary remains vendor-neutral:
 
 ## Provider Safety
 
-- `AI_PROVIDER=mock` is the safe local-demo default.
-- A default Ollama URL keeps contract text on the machine running Ollama.
-- Pointing `OLLAMA_BASE_URL` at another host sends contract text to that host.
+- `GEMINI_API_KEY` stays server-side and must never be exposed through browser environment variables.
+- `AI_PROVIDER=mock` remains the safe offline test and deterministic-demo option.
+- Gemini sends supplied contract text to Google's API; use only approved data and credentials.
 - Model output remains an untrusted draft even when schema-valid.
 - Provider errors, invalid JSON, and schema failures mark the extraction run as failed and remain visible to operators.
 - Use only models and infrastructure approved for the contract data being processed.
@@ -128,7 +118,7 @@ Reviewer identity is used as the actor for review and apply events. Full source 
 ## Current Boundaries
 
 - Paste-based text intake only; file upload/OCR is a later ingestion enhancement
-- Mock provider only by default
+- Gemini real-model extraction plus deterministic mock fallback
 - No autonomous approval or billing activation
 - No AI pricing, invoice, revenue, or journal-entry calculations
 - No conversational reviewer assistant yet

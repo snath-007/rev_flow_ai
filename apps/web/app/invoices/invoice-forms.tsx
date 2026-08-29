@@ -20,6 +20,11 @@ export function InvoiceGenerateForm({ contracts }: { contracts: ContractSummary[
     setError(null);
     setIsSubmitting(true);
 
+    if (!window.confirm("Generate a draft invoice for this contract and period? The invoice will remain editable only through controlled approval steps.")) {
+      setIsSubmitting(false);
+      return;
+    }
+
     const payload = {
       contractId: String(formData.get("contractId") ?? ""),
       periodStart: String(formData.get("periodStart") ?? ""),
@@ -67,6 +72,8 @@ export function InvoiceGenerateForm({ contracts }: { contracts: ContractSummary[
           <input id="period-end" name="periodEnd" type="date" required />
         </div>
       </div>
+      {activeContracts.length === 0 ? <p className="form-help">Activate a contract before generating an invoice.</p> : null}
+      <div className="consequence-note">Generation creates a draft invoice from deterministic contract, pricing, and usage inputs.</div>
       {error ? <p className="error-text">{error}</p> : null}
       <button disabled={isSubmitting || activeContracts.length === 0} type="submit">
         {isSubmitting ? "Generating..." : "Generate invoice"}
@@ -85,6 +92,11 @@ export function InvoiceApproveForm({ invoices }: { invoices: Invoice[] }) {
     setIsSubmitting(true);
 
     const invoiceId = String(formData.get("invoiceId") ?? "");
+
+    if (!window.confirm("Approve this invoice for downstream revenue recognition?")) {
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const response = await fetch(`/api/invoices/${invoiceId}/approve`, {
@@ -115,6 +127,8 @@ export function InvoiceApproveForm({ invoices }: { invoices: Invoice[] }) {
           ))}
         </select>
       </div>
+      {draftInvoices.length === 0 ? <p className="form-help">Generate a draft invoice before approval.</p> : null}
+      <div className="consequence-note">Approval marks the invoice ready for revenue schedule generation.</div>
       {error ? <p className="error-text">{error}</p> : null}
       <button disabled={isSubmitting || draftInvoices.length === 0} type="submit">
         {isSubmitting ? "Approving..." : "Approve invoice"}

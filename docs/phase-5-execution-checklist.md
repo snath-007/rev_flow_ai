@@ -279,7 +279,7 @@ Acceptance criteria:
 - Real provider is opt-in.
 - Provider failures are persisted and user-visible.
 
-Implementation note: Ollama is the first real adapter, using schema-constrained local inference through `/api/chat`. The mock remains the default, and the provider-neutral interface permits additional adapters without changing extraction routes or services.
+Implementation note: Gemini supersedes the original local-model adapter and uses schema-constrained inference through Google's API. The deterministic mock remains available, and the provider-neutral interface permits additional adapters without changing extraction routes or services.
 
 ## Milestone 9 - Documentation And Demo Refresh
 

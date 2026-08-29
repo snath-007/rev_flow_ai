@@ -1,7 +1,8 @@
-﻿import { enqueueUsageAggregationJob } from "@revflow/queues";
+import { enqueueUsageAggregationJob } from "@revflow/queues";
 import type { AggregateUsageInput, IngestUsageEventInput } from "@revflow/shared";
 
 import { ApiError } from "../../lib/http.js";
+import { getRequiredAuthenticatedActor } from "../../lib/request-context.js";
 import { createAuditLog } from "../audit/audit.service.js";
 import { getUsageAggregationPeriod } from "./usage-period.js";
 import * as usageRepository from "./usage.repository.js";
@@ -41,9 +42,12 @@ export async function aggregateUsageForPeriod(input: AggregateUsageInput) {
 
 async function enqueueAggregationForUsageEvent(event: Awaited<ReturnType<typeof usageRepository.listUsageEvents>>[number]) {
   const period = getUsageAggregationPeriod(event.occurredAt);
+  const actor = getRequiredAuthenticatedActor();
 
   try {
     await enqueueUsageAggregationJob({
+      workspaceId: actor.workspaceId,
+      initiatedByExternalUserId: actor.externalUserId,
       contractId: event.contractId,
       meterId: event.meterId,
       periodStart: period.periodStart,

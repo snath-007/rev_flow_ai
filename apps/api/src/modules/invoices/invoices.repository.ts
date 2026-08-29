@@ -1,5 +1,7 @@
-﻿import { createSqlClient } from "@revflow/db";
+import { createSqlClient } from "@revflow/db";
 import type { GenerateInvoiceInput } from "@revflow/shared";
+
+import { getRequiredWorkspaceId } from "../../lib/request-context.js";
 import { calculateInvoiceLineItems, calculateInvoiceTotal } from "./invoice-calculator.js";
 
 type DateLike = Date | string;
@@ -12,9 +14,15 @@ type InvoiceRow = {
   status: "draft" | "approved" | "issued" | "paid" | "void" | "credited";
   period_start: DateLike;
   period_end: DateLike;
+  issued_at: Date | null;
+  due_at: Date | null;
   currency: string;
   subtotal: string;
   total: string;
+  amount_paid: string | number | null;
+  balance_due: string | number | null;
+  overpaid_amount: string | number | null;
+  payment_status: "unpaid" | "partial" | "paid" | "overpaid" | null;
   calculation_snapshot: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
@@ -64,6 +72,12 @@ function formatDate(value: DateLike) {
 }
 
 function toInvoice(row: InvoiceRow, lineItems?: ReturnType<typeof toInvoiceLineItem>[]) {
+  const total = Number(row.total);
+  const amountPaid = Number(row.amount_paid ?? 0);
+  const balanceDue = Number(row.balance_due ?? Math.max(total - amountPaid, 0));
+  const overpaidAmount = Number(row.overpaid_amount ?? Math.max(amountPaid - total, 0));
+  const paymentStatus = row.payment_status ?? (overpaidAmount > 0 ? "overpaid" : balanceDue <= 0 && total > 0 ? "paid" : amountPaid > 0 ? "partial" : "unpaid");
+
   return {
     id: row.id,
     customerId: row.customer_id,
@@ -72,9 +86,15 @@ function toInvoice(row: InvoiceRow, lineItems?: ReturnType<typeof toInvoiceLineI
     status: row.status,
     periodStart: formatDate(row.period_start),
     periodEnd: formatDate(row.period_end),
+    issuedAt: row.issued_at ? row.issued_at.toISOString() : null,
+    dueAt: row.due_at ? row.due_at.toISOString() : null,
     currency: row.currency,
     subtotal: Number(row.subtotal),
-    total: Number(row.total),
+    total,
+    amountPaid,
+    balanceDue,
+    overpaidAmount,
+    paymentStatus,
     calculationSnapshot: row.calculation_snapshot,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
@@ -98,11 +118,12 @@ function toInvoiceLineItem(row: InvoiceLineItemRow) {
   };
 }
 
-async function getInvoiceLineItems(sql: ReturnType<typeof createSqlClient>, invoiceId: string) {
+async function getInvoiceLineItems(sql: ReturnType<typeof createSqlClient>, workspaceId: string, invoiceId: string) {
   const rows = await sql<InvoiceLineItemRow[]>`
     select id, invoice_id, contract_line_item_id, price_rule_id, description, quantity, unit_price, amount, currency, calculation_snapshot, created_at
     from invoice_line_items
-    where invoice_id = ${invoiceId}
+    where workspace_id = ${workspaceId}
+      and invoice_id = ${invoiceId}
     order by created_at asc
   `;
 
@@ -110,6 +131,7 @@ async function getInvoiceLineItems(sql: ReturnType<typeof createSqlClient>, invo
 }
 
 export async function listInvoices() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -122,14 +144,35 @@ export async function listInvoices() {
         i.status,
         i.period_start,
         i.period_end,
+        i.issued_at,
+        i.due_at,
         i.currency,
         i.subtotal,
         i.total,
+        coalesce(payment_totals.amount_paid, 0) as amount_paid,
+        greatest(i.total - coalesce(payment_totals.amount_paid, 0), 0) as balance_due,
+        greatest(coalesce(payment_totals.amount_paid, 0) - i.total, 0) as overpaid_amount,
+        case
+          when coalesce(payment_totals.amount_paid, 0) > i.total then 'overpaid'
+          when i.total > 0 and coalesce(payment_totals.amount_paid, 0) >= i.total then 'paid'
+          when coalesce(payment_totals.amount_paid, 0) > 0 then 'partial'
+          else 'unpaid'
+        end as payment_status,
         i.calculation_snapshot,
         i.created_at,
         i.updated_at
       from invoices i
       join customers c on c.id = i.customer_id
+      left join lateral (
+        select coalesce(sum(pa.amount), 0) as amount_paid
+        from payment_allocations pa
+        join payments p on p.id = pa.payment_id
+          and p.workspace_id = pa.workspace_id
+        where pa.workspace_id = i.workspace_id
+          and pa.invoice_id = i.id
+          and p.status = 'received'
+      ) payment_totals on true
+      where i.workspace_id = ${workspaceId}
       order by i.created_at desc
     `;
 
@@ -140,6 +183,7 @@ export async function listInvoices() {
 }
 
 export async function getInvoiceById(id: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -152,15 +196,36 @@ export async function getInvoiceById(id: string) {
         i.status,
         i.period_start,
         i.period_end,
+        i.issued_at,
+        i.due_at,
         i.currency,
         i.subtotal,
         i.total,
+        coalesce(payment_totals.amount_paid, 0) as amount_paid,
+        greatest(i.total - coalesce(payment_totals.amount_paid, 0), 0) as balance_due,
+        greatest(coalesce(payment_totals.amount_paid, 0) - i.total, 0) as overpaid_amount,
+        case
+          when coalesce(payment_totals.amount_paid, 0) > i.total then 'overpaid'
+          when i.total > 0 and coalesce(payment_totals.amount_paid, 0) >= i.total then 'paid'
+          when coalesce(payment_totals.amount_paid, 0) > 0 then 'partial'
+          else 'unpaid'
+        end as payment_status,
         i.calculation_snapshot,
         i.created_at,
         i.updated_at
       from invoices i
       join customers c on c.id = i.customer_id
-      where i.id = ${id}
+      left join lateral (
+        select coalesce(sum(pa.amount), 0) as amount_paid
+        from payment_allocations pa
+        join payments p on p.id = pa.payment_id
+          and p.workspace_id = pa.workspace_id
+        where pa.workspace_id = i.workspace_id
+          and pa.invoice_id = i.id
+          and p.status = 'received'
+      ) payment_totals on true
+      where i.workspace_id = ${workspaceId}
+        and i.id = ${id}
       limit 1
     `;
     const row = rows[0];
@@ -169,7 +234,7 @@ export async function getInvoiceById(id: string) {
       return null;
     }
 
-    const lineItems = await getInvoiceLineItems(sql, id);
+    const lineItems = await getInvoiceLineItems(sql, workspaceId, id);
     return toInvoice(row, lineItems);
   } finally {
     await sql.end({ timeout: 5 });
@@ -177,6 +242,7 @@ export async function getInvoiceById(id: string) {
 }
 
 export async function generateInvoice(input: GenerateInvoiceInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -184,7 +250,8 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
       const contractRows = await tx<ContractRow[]>`
         select id, customer_id, status
         from contracts
-        where id = ${input.contractId}
+        where workspace_id = ${workspaceId}
+          and id = ${input.contractId}
         limit 1
       `;
       const contract = contractRows[0];
@@ -200,7 +267,8 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
       const existingInvoiceRows = await tx<{ id: string }[]>`
         select id
         from invoices
-        where contract_id = ${input.contractId}
+        where workspace_id = ${workspaceId}
+          and contract_id = ${input.contractId}
           and period_start = ${input.periodStart}
           and period_end = ${input.periodEnd}
           and status in ('draft', 'approved', 'issued', 'paid')
@@ -257,16 +325,19 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
             count(ue.id) as event_count,
             coalesce(sum(ue.quantity), 0) as total_quantity
           from usage_events ue
-          where ue.contract_id = cv.contract_id
+          where ue.workspace_id = ${workspaceId}
+            and ue.contract_id = cv.contract_id
             and ue.meter_id = pr.meter_id
             and ue.occurred_at >= ${input.periodStart}
             and ue.occurred_at < (${input.periodEnd}::date + interval '1 day')
         ) raw_usage on pr.meter_id is not null
-        where cv.contract_id = ${input.contractId}
+        where cv.workspace_id = ${workspaceId}
+          and cv.contract_id = ${input.contractId}
           and cv.version_number = (
             select max(version_number)
             from contract_versions
-            where contract_id = ${input.contractId}
+            where workspace_id = ${workspaceId}
+          and contract_id = ${input.contractId}
           )
         order by cli.created_at asc
       `;
@@ -283,8 +354,9 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
       const currency = lineItems[0]?.currency ?? "USD";
 
       const invoiceRows = await tx<InvoiceRow[]>`
-        insert into invoices (customer_id, contract_id, status, period_start, period_end, currency, subtotal, total, calculation_snapshot)
+        insert into invoices (workspace_id, customer_id, contract_id, status, period_start, period_end, currency, subtotal, total, calculation_snapshot)
         values (
+          ${workspaceId},
           ${contract.customer_id},
           ${contract.id},
           'draft',
@@ -295,7 +367,7 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
           ${subtotal},
           ${tx.json({ generatedFrom: "usage_aggregates_with_raw_event_fallback", lineCount: lineItems.length } as never)}
         )
-        returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, calculation_snapshot, created_at, updated_at
+        returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, issued_at, due_at, currency, subtotal, total, 0::numeric as amount_paid, total as balance_due, 0::numeric as overpaid_amount, 'unpaid'::text as payment_status, calculation_snapshot, created_at, updated_at
       `;
       const invoice = invoiceRows[0];
 
@@ -307,8 +379,9 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
 
       for (const line of lineItems) {
         const rows = await tx<InvoiceLineItemRow[]>`
-          insert into invoice_line_items (invoice_id, contract_line_item_id, price_rule_id, description, quantity, unit_price, amount, currency, calculation_snapshot)
+          insert into invoice_line_items (workspace_id, invoice_id, contract_line_item_id, price_rule_id, description, quantity, unit_price, amount, currency, calculation_snapshot)
           values (
+            ${workspaceId},
             ${invoice.id},
             ${line.contractLineItemId},
             ${line.priceRuleId},
@@ -338,15 +411,17 @@ export async function generateInvoice(input: GenerateInvoiceInput) {
 }
 
 export async function approveInvoice(id: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<InvoiceRow[]>`
       update invoices
-      set status = 'approved', updated_at = now()
-      where id = ${id}
+      set status = 'approved', issued_at = coalesce(issued_at, now()), due_at = coalesce(due_at, now() + interval '30 days'), updated_at = now()
+      where workspace_id = ${workspaceId}
+        and id = ${id}
         and status = 'draft'
-      returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, currency, subtotal, total, calculation_snapshot, created_at, updated_at
+      returning id, customer_id, contract_id, null::text as customer_name, status, period_start, period_end, issued_at, due_at, currency, subtotal, total, 0::numeric as amount_paid, total as balance_due, 0::numeric as overpaid_amount, 'unpaid'::text as payment_status, calculation_snapshot, created_at, updated_at
     `;
 
     return rows[0] ? toInvoice(rows[0]) : null;

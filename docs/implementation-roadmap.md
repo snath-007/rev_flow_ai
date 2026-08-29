@@ -91,7 +91,7 @@ Goal: convert unstructured commercial text into traceable, human-reviewed draft 
 - Shared structured extraction schemas
 - Provider-neutral adapter interface
 - Deterministic mock provider
-- Opt-in local Ollama provider
+- Direct Gemini API provider
 - Confidence, ambiguity, missing-field, and source-snippet visibility
 - `/ai` review workspace with accept, edit, and reject decisions
 - Extraction approval/rejection and conservative apply workflow
@@ -112,11 +112,13 @@ Module notes: [AI-Assisted Contract Extraction](./modules/ai-extraction.md)
 
 ## Phase 6 - Productization, Reporting, And Deployment
 
-Status: planned.
+Status: in progress. Core productization is implemented; live deployment and hardening remain.
 
 Goal: turn the functional POC into a coherent, access-controlled, deployable product demonstration.
 
 - Unified navigation, responsive UI, and standardized interaction patterns
+- Distinctive RevFlow design system for public and authenticated surfaces
+- Public landing experience demonstrating the contract-to-revenue lifecycle
 - Authentication and systematic customer/tenant onboarding
 - Role-based access control and tenant-aware data ownership
 - MRR, ARR, NRR, revenue waterfall, AR, and DSO dashboards
@@ -125,3 +127,5 @@ Goal: turn the functional POC into a coherent, access-controlled, deployable pro
 - Hosted deployment design for frontend, API, worker, Postgres, Redis, and AI
 - Security, observability, backups, scaling, and production tradeoff notes
 - Architecture diagrams, screenshots, and polished demo flow
+
+Detailed checklist: [Phase 6 Execution Checklist](./phase-6-execution-checklist.md)

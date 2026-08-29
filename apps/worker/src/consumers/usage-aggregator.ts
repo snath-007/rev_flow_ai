@@ -1,4 +1,4 @@
-﻿import { createSqlClient } from "@revflow/db";
+import { createSqlClient } from "@revflow/db";
 import { getRedisConnectionOptions, queueNames, type UsageAggregationJob } from "@revflow/queues";
 import { Worker, type Job } from "bullmq";
 
@@ -24,8 +24,10 @@ export async function aggregateUsageForPeriod(data: UsageAggregationJob) {
         with target as (
           select c.id as contract_id, m.id as meter_id, m.aggregation_type
           from contracts c
-          join meters m on m.id = ${data.meterId}
-          where c.id = ${data.contractId}
+          join meters m on m.workspace_id = ${data.workspaceId}
+            and m.id = ${data.meterId}
+          where c.workspace_id = ${data.workspaceId}
+            and c.id = ${data.contractId}
             and c.status = 'active'
             and exists (
               select 1
@@ -52,13 +54,15 @@ export async function aggregateUsageForPeriod(data: UsageAggregationJob) {
             min(ue.occurred_at) as first_occurred_at,
             max(ue.occurred_at) as last_occurred_at
           from target
-          left join usage_events ue on ue.contract_id = target.contract_id
+          left join usage_events ue on ue.workspace_id = ${data.workspaceId}
+            and ue.contract_id = target.contract_id
             and ue.meter_id = target.meter_id
             and ue.occurred_at >= ${data.periodStart}
             and ue.occurred_at < (${data.periodEnd}::date + interval '1 day')
           group by target.contract_id, target.meter_id, target.aggregation_type
         )
         insert into usage_aggregates (
+          workspace_id,
           contract_id,
           meter_id,
           period_start,
@@ -72,6 +76,7 @@ export async function aggregateUsageForPeriod(data: UsageAggregationJob) {
           updated_at
         )
         select
+          ${data.workspaceId},
           contract_id,
           meter_id,
           period_start,
@@ -84,7 +89,7 @@ export async function aggregateUsageForPeriod(data: UsageAggregationJob) {
           now(),
           now()
         from calculated
-        on conflict (contract_id, meter_id, period_start, period_end)
+        on conflict (workspace_id, contract_id, meter_id, period_start, period_end)
         do update set
           event_count = excluded.event_count,
           total_quantity = excluded.total_quantity,
@@ -127,18 +132,20 @@ export function createUsageAggregatorWorker() {
         queueName: job.queueName,
         jobName: job.name,
         jobId: job.id ?? null,
+        workspaceId: job.data.workspaceId,
+        initiatedByExternalUserId: job.data.initiatedByExternalUserId,
         payload: job.data
       });
 
       try {
         const aggregate = await aggregateUsageForPeriod(job.data);
-        await markJobRunSucceeded(jobRunId, aggregate);
+        await markJobRunSucceeded(job.data.workspaceId, jobRunId, aggregate);
         console.log(
           `Usage aggregate ${aggregate.id} refreshed for contract ${aggregate.contractId}, meter ${aggregate.meterId}, period ${aggregate.periodStart}..${aggregate.periodEnd}`
         );
         return aggregate;
       } catch (error) {
-        await markJobRunFailed(jobRunId, error);
+        await markJobRunFailed(job.data.workspaceId, jobRunId, error);
         throw error;
       }
     },

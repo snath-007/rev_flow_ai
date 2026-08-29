@@ -61,4 +61,8 @@ Tailwind plus shadcn/ui gives us enough structure to move quickly while still le
 - Empty states
 - Error states
 - Loading skeletons
+## Phase 6 Experience Contract
 
+The accepted [Phase 6 Product Experience Blueprint](./phase-6-product-experience-blueprint.md) refines this plan with the public/product boundary, information architecture, role journeys, landing narrative, responsive rules, and visual direction.
+
+The public site may use expressive product storytelling. The authenticated application remains a quiet, dense operational workspace.

@@ -1,5 +1,7 @@
-﻿import { createSqlClient } from "@revflow/db";
+import { createSqlClient } from "@revflow/db";
 import type { AggregateUsageInput, IngestUsageEventInput } from "@revflow/shared";
+
+import { getRequiredWorkspaceId } from "../../lib/request-context.js";
 
 type DateLike = Date | string;
 
@@ -87,12 +89,14 @@ function toUsageAggregate(row: UsageAggregateRow) {
 }
 
 export async function listUsageEvents() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<UsageEventRow[]>`
       select id, idempotency_key, contract_id, meter_id, quantity, occurred_at, properties, created_at
       from usage_events
+      where workspace_id = ${workspaceId}
       order by occurred_at desc, created_at desc
       limit 100
     `;
@@ -104,6 +108,7 @@ export async function listUsageEvents() {
 }
 
 export async function ingestUsageEvent(input: IngestUsageEventInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -120,7 +125,8 @@ export async function ingestUsageEvent(input: IngestUsageEventInput) {
               and pr.meter_id = ${input.meterId}
           ) as meter_is_configured
         from contracts c
-        where c.id = ${input.contractId}
+        where c.workspace_id = ${workspaceId}
+          and c.id = ${input.contractId}
         limit 1
       `;
       const contractMeter = contractMeterRows[0];
@@ -138,8 +144,9 @@ export async function ingestUsageEvent(input: IngestUsageEventInput) {
       }
 
       const rows = await tx<UsageEventMutationRow[]>`
-        insert into usage_events (idempotency_key, contract_id, meter_id, quantity, occurred_at, properties)
+        insert into usage_events (workspace_id, idempotency_key, contract_id, meter_id, quantity, occurred_at, properties)
         values (
+          ${workspaceId},
           ${input.idempotencyKey},
           ${input.contractId},
           ${input.meterId},
@@ -147,7 +154,7 @@ export async function ingestUsageEvent(input: IngestUsageEventInput) {
           ${input.occurredAt},
           ${tx.json((input.properties ?? {}) as never)}
         )
-        on conflict (idempotency_key) do update
+        on conflict (workspace_id, idempotency_key) do update
         set idempotency_key = excluded.idempotency_key
         returning id, idempotency_key, contract_id, meter_id, quantity, occurred_at, properties, created_at, (xmax = 0) as was_inserted
       `;
@@ -168,6 +175,7 @@ export async function ingestUsageEvent(input: IngestUsageEventInput) {
 }
 
 export async function listUsageAggregates() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -193,6 +201,7 @@ export async function listUsageAggregates() {
       join meters m on m.id = ua.meter_id
       join contracts c on c.id = ua.contract_id
       join customers cst on cst.id = c.customer_id
+      where ua.workspace_id = ${workspaceId}
       order by ua.period_end desc, ua.updated_at desc
       limit 100
     `;
@@ -204,6 +213,7 @@ export async function listUsageAggregates() {
 }
 
 export async function aggregateUsageForPeriod(input: AggregateUsageInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
@@ -222,7 +232,9 @@ export async function aggregateUsageForPeriod(input: AggregateUsageInput) {
           ) as meter_is_configured
         from contracts c
         cross join meters m
-        where c.id = ${input.contractId}
+        where c.workspace_id = ${workspaceId}
+          and c.id = ${input.contractId}
+          and m.workspace_id = ${workspaceId}
           and m.id = ${input.meterId}
         limit 1
       `;
@@ -256,14 +268,17 @@ export async function aggregateUsageForPeriod(input: AggregateUsageInput) {
             min(ue.occurred_at) as first_occurred_at,
             max(ue.occurred_at) as last_occurred_at
           from meters m
-          left join usage_events ue on ue.contract_id = ${input.contractId}
+          left join usage_events ue on ue.workspace_id = ${workspaceId}
+            and ue.contract_id = ${input.contractId}
             and ue.meter_id = ${input.meterId}
             and ue.occurred_at >= ${input.periodStart}
             and ue.occurred_at < (${input.periodEnd}::date + interval '1 day')
-          where m.id = ${input.meterId}
+          where m.workspace_id = ${workspaceId}
+            and m.id = ${input.meterId}
           group by m.aggregation_type
         )
         insert into usage_aggregates (
+          workspace_id,
           contract_id,
           meter_id,
           period_start,
@@ -277,6 +292,7 @@ export async function aggregateUsageForPeriod(input: AggregateUsageInput) {
           updated_at
         )
         select
+          ${workspaceId},
           contract_id,
           meter_id,
           period_start,
@@ -289,7 +305,7 @@ export async function aggregateUsageForPeriod(input: AggregateUsageInput) {
           now(),
           now()
         from calculated
-        on conflict (contract_id, meter_id, period_start, period_end)
+        on conflict (workspace_id, contract_id, meter_id, period_start, period_end)
         do update set
           event_count = excluded.event_count,
           total_quantity = excluded.total_quantity,
@@ -303,9 +319,9 @@ export async function aggregateUsageForPeriod(input: AggregateUsageInput) {
           contract_id,
           null::text as customer_name,
           meter_id,
-          (select name from meters where id = usage_aggregates.meter_id) as meter_name,
-          (select aggregation_type from meters where id = usage_aggregates.meter_id) as aggregation_type,
-          (select unit from meters where id = usage_aggregates.meter_id) as unit,
+          (select name from meters where workspace_id = ${workspaceId} and id = usage_aggregates.meter_id) as meter_name,
+          (select aggregation_type from meters where workspace_id = ${workspaceId} and id = usage_aggregates.meter_id) as aggregation_type,
+          (select unit from meters where workspace_id = ${workspaceId} and id = usage_aggregates.meter_id) as unit,
           period_start,
           period_end,
           event_count,

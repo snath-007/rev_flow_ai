@@ -6,6 +6,8 @@ import type {
   CreateProductInput
 } from "@revflow/shared";
 
+import { getRequiredWorkspaceId } from "../../lib/request-context.js";
+
 type ProductRow = {
   id: string;
   name: string;
@@ -99,12 +101,14 @@ function toPriceRule(row: PriceRuleRow) {
 }
 
 export async function listProducts() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<ProductRow[]>`
       select id, name, description, status, created_at, updated_at
       from products
+      where workspace_id = ${workspaceId}
       order by created_at desc
     `;
 
@@ -115,13 +119,15 @@ export async function listProducts() {
 }
 
 export async function getProductById(id: string) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<ProductRow[]>`
       select id, name, description, status, created_at, updated_at
       from products
-      where id = ${id}
+      where workspace_id = ${workspaceId}
+        and id = ${id}
       limit 1
     `;
 
@@ -132,12 +138,13 @@ export async function getProductById(id: string) {
 }
 
 export async function createProduct(input: CreateProductInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<ProductRow[]>`
-      insert into products (name, description, status)
-      values (${input.name}, ${input.description ?? null}, ${input.status ?? "active"})
+      insert into products (workspace_id, name, description, status)
+      values (${workspaceId}, ${input.name}, ${input.description ?? null}, ${input.status ?? "active"})
       returning id, name, description, status, created_at, updated_at
     `;
     const row = rows[0];
@@ -153,12 +160,14 @@ export async function createProduct(input: CreateProductInput) {
 }
 
 export async function listMeters() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<MeterRow[]>`
       select id, product_id, name, event_name, aggregation_type, unit, created_at, updated_at
       from meters
+      where workspace_id = ${workspaceId}
       order by created_at desc
     `;
 
@@ -169,12 +178,13 @@ export async function listMeters() {
 }
 
 export async function createMeter(input: CreateMeterInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<MeterRow[]>`
-      insert into meters (product_id, name, event_name, aggregation_type, unit)
-      values (${input.productId}, ${input.name}, ${input.eventName}, ${input.aggregationType}, ${input.unit})
+      insert into meters (workspace_id, product_id, name, event_name, aggregation_type, unit)
+      values (${workspaceId}, ${input.productId}, ${input.name}, ${input.eventName}, ${input.aggregationType}, ${input.unit})
       returning id, product_id, name, event_name, aggregation_type, unit, created_at, updated_at
     `;
     const row = rows[0];
@@ -190,12 +200,14 @@ export async function createMeter(input: CreateMeterInput) {
 }
 
 export async function listPlans() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<PlanRow[]>`
       select id, product_id, name, billing_interval, status, created_at, updated_at
       from plans
+      where workspace_id = ${workspaceId}
       order by created_at desc
     `;
 
@@ -206,12 +218,13 @@ export async function listPlans() {
 }
 
 export async function createPlan(input: CreatePlanInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<PlanRow[]>`
-      insert into plans (product_id, name, billing_interval, status)
-      values (${input.productId}, ${input.name}, ${input.billingInterval}, ${input.status ?? "active"})
+      insert into plans (workspace_id, product_id, name, billing_interval, status)
+      values (${workspaceId}, ${input.productId}, ${input.name}, ${input.billingInterval}, ${input.status ?? "active"})
       returning id, product_id, name, billing_interval, status, created_at, updated_at
     `;
     const row = rows[0];
@@ -227,12 +240,14 @@ export async function createPlan(input: CreatePlanInput) {
 }
 
 export async function listPriceRules() {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<PriceRuleRow[]>`
       select id, plan_id, meter_id, pricing_model, unit_price, currency, config, created_at, updated_at
       from price_rules
+      where workspace_id = ${workspaceId}
       order by created_at desc
     `;
 
@@ -243,12 +258,14 @@ export async function listPriceRules() {
 }
 
 export async function createPriceRule(input: CreatePriceRuleInput) {
+  const workspaceId = getRequiredWorkspaceId();
   const sql = createSqlClient();
 
   try {
     const rows = await sql<PriceRuleRow[]>`
-      insert into price_rules (plan_id, meter_id, pricing_model, unit_price, currency, config)
+      insert into price_rules (workspace_id, plan_id, meter_id, pricing_model, unit_price, currency, config)
       values (
+        ${workspaceId},
         ${input.planId},
         ${input.meterId ?? null},
         ${input.pricingModel},

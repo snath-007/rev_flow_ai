@@ -1,6 +1,8 @@
 import postgres from "postgres";
 
-export function getDatabaseUrl(databaseUrl = process.env.DATABASE_URL) {
+export function getDatabaseUrl(
+  databaseUrl = process.env.DATABASE_URL_POOLED ?? process.env.DATABASE_URL,
+) {
   if (!databaseUrl) {
     throw new Error("DATABASE_URL is required to create a Postgres client");
   }
@@ -12,7 +14,9 @@ export function createSqlClient(databaseUrl = process.env.DATABASE_URL) {
   return postgres(getDatabaseUrl(databaseUrl));
 }
 
-export async function checkDatabaseConnection(databaseUrl = process.env.DATABASE_URL) {
+export async function checkDatabaseConnection(
+  databaseUrl = process.env.DATABASE_URL,
+) {
   const sql = createSqlClient(databaseUrl);
 
   try {

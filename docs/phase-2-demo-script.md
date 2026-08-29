@@ -17,7 +17,7 @@ Optional worker process in a second terminal:
 npm run dev -w @revflow/worker
 ```
 
-The default `AI_PROVIDER=mock` is deterministic and requires no credentials. For a local-model demo, install Ollama, run `ollama pull qwen2.5:3b`, set `AI_PROVIDER=ollama`, and restart the API.
+The default `AI_PROVIDER=gemini` uses the server-side `GEMINI_API_KEY`. Set `AI_PROVIDER=mock` for a deterministic demo that requires no credentials or external calls.
 
 Open:
 
@@ -48,7 +48,7 @@ Open:
 ## What To Explain
 
 - AI converts unstructured text into a reviewable draft; it does not calculate money or activate billing.
-- Provider adapters are interchangeable: mock keeps demos repeatable, while Ollama provides local real-model inference.
+- Provider adapters are interchangeable: mock keeps demos repeatable, while Gemini provides real-model inference through Google's API.
 - Structured output is schema-validated before persistence.
 - Source evidence, ambiguities, prompt/provider metadata, failures, and reviewer decisions remain inspectable.
 - Applying an approved extraction creates draft configuration; normal contract approval is still the activation gate.

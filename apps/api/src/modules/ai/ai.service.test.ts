@@ -1,4 +1,8 @@
-import type { AiExtractionOutput, AiExtractionRun, ReviewAiExtractionInput } from "@revflow/shared";
+import type {
+  AiExtractionOutput,
+  AiExtractionRun,
+  ReviewAiExtractionInput,
+} from "@revflow/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createAuditLog } from "../audit/audit.service.js";
@@ -9,7 +13,7 @@ import {
   applyReviewedExtraction,
   createContractExtraction,
   getExtractionRunById,
-  reviewContractExtraction
+  reviewContractExtraction,
 } from "./ai.service.js";
 import type { AiProvider } from "./ai.types.js";
 
@@ -21,20 +25,20 @@ vi.mock("./ai.repository.js", () => ({
   completeExtractionRun: vi.fn(),
   failExtractionRun: vi.fn(),
   reviewExtractionRun: vi.fn(),
-  markExtractionRunApplied: vi.fn()
+  markExtractionRunApplied: vi.fn(),
 }));
 
 vi.mock("../audit/audit.service.js", () => ({
-  createAuditLog: vi.fn()
+  createAuditLog: vi.fn(),
 }));
 
 vi.mock("../customers/customers.service.js", () => ({
   findCustomerByEmail: vi.fn(),
-  createCustomer: vi.fn()
+  createCustomer: vi.fn(),
 }));
 
 vi.mock("../contracts/contracts.service.js", () => ({
-  createContract: vi.fn()
+  createContract: vi.fn(),
 }));
 
 const mockedRepository = vi.mocked(aiRepository);
@@ -52,7 +56,7 @@ const reviewedOutput: AiExtractionOutput = {
       value: "Acme Corp",
       confidence: 0.94,
       sourceSnippet: "Customer: Acme Corp",
-      ambiguity: null
+      ambiguity: null,
     },
     {
       key: "customer_email",
@@ -61,7 +65,7 @@ const reviewedOutput: AiExtractionOutput = {
       value: "billing@acme.example",
       confidence: 0.94,
       sourceSnippet: "Email: billing@acme.example",
-      ambiguity: null
+      ambiguity: null,
     },
     {
       key: "contract_start_date",
@@ -70,7 +74,7 @@ const reviewedOutput: AiExtractionOutput = {
       value: "2026-07-01",
       confidence: 0.93,
       sourceSnippet: "Effective date: 2026-07-01",
-      ambiguity: null
+      ambiguity: null,
     },
     {
       key: "contract_end_date",
@@ -79,14 +83,16 @@ const reviewedOutput: AiExtractionOutput = {
       value: "2027-06-30",
       confidence: 0.91,
       sourceSnippet: "End date: 2027-06-30",
-      ambiguity: null
-    }
+      ambiguity: null,
+    },
   ],
   ambiguities: [],
-  missingFields: []
+  missingFields: [],
 };
 
-function extractionRun(overrides: Partial<AiExtractionRun> = {}): AiExtractionRun {
+function extractionRun(
+  overrides: Partial<AiExtractionRun> = {},
+): AiExtractionRun {
   return {
     id: "11111111-1111-4111-8111-111111111111",
     sourceType: "text",
@@ -107,7 +113,7 @@ function extractionRun(overrides: Partial<AiExtractionRun> = {}): AiExtractionRu
     appliedAt: null,
     createdAt: "2026-06-21T00:00:00.000Z",
     updatedAt: "2026-06-21T00:00:00.000Z",
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -119,8 +125,8 @@ const providerResult = {
   confidenceSummary: {
     overall: 0.93,
     highConfidenceCount: 4,
-    lowConfidenceCount: 0
-  }
+    lowConfidenceCount: 0,
+  },
 };
 
 const reviewInput: ReviewAiExtractionInput = {
@@ -131,10 +137,10 @@ const reviewInput: ReviewAiExtractionInput = {
     status: "accepted" as const,
     originalValue: field.value,
     reviewedValue: field.value,
-    notes: null
+    notes: null,
   })),
   reviewedOutput,
-  notes: "Reviewed against the source contract."
+  notes: "Reviewed against the source contract.",
 };
 
 describe("AI extraction service", () => {
@@ -146,10 +152,10 @@ describe("AI extraction service", () => {
     mockedRepository.getExtractionRunById.mockResolvedValue(null);
 
     await expect(
-      getExtractionRunById("11111111-1111-4111-8111-111111111111")
+      getExtractionRunById("11111111-1111-4111-8111-111111111111"),
     ).rejects.toMatchObject({
       statusCode: 404,
-      code: "AI_EXTRACTION_NOT_FOUND"
+      code: "AI_EXTRACTION_NOT_FOUND",
     });
   });
 
@@ -160,50 +166,73 @@ describe("AI extraction service", () => {
       status: "extracted",
       model: providerResult.model,
       structuredOutput: providerResult.output,
-      confidenceSummary: providerResult.confidenceSummary
+      confidenceSummary: providerResult.confidenceSummary,
     });
     const provider: AiProvider = {
       name: "mock",
-      extractContractTerms: vi.fn().mockResolvedValue(providerResult)
+      extractContractTerms: vi.fn().mockResolvedValue(providerResult),
     };
 
     mockedRepository.createExtractionRun.mockResolvedValue(createdRun);
-    mockedRepository.markExtractionRunExtracting.mockResolvedValue(extractingRun);
+    mockedRepository.markExtractionRunExtracting.mockResolvedValue(
+      extractingRun,
+    );
     mockedRepository.completeExtractionRun.mockResolvedValue(completedRun);
 
     const result = await createContractExtraction(
       { sourceType: "text", sourceText: createdRun.sourceText },
-      provider
+      provider,
     );
 
     expect(result.status).toBe("extracted");
-    expect(mockedRepository.completeExtractionRun).toHaveBeenCalledWith(createdRun.id, providerResult);
-    expect(mockedCreateAuditLog).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      action: "ai_extraction.completed"
-    }));
+    expect(mockedRepository.completeExtractionRun).toHaveBeenCalledWith(
+      createdRun.id,
+      providerResult,
+    );
+    expect(mockedCreateAuditLog).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        action: "ai_extraction.completed",
+      }),
+    );
   });
 
   it("persists provider failures and keeps the failed run auditable", async () => {
     const createdRun = extractionRun();
     const extractingRun = extractionRun({ status: "extracting" });
-    const failedRun = extractionRun({ status: "failed", errorMessage: "Mock provider unavailable" });
+    const failedRun = extractionRun({
+      status: "failed",
+      errorMessage: "Mock provider unavailable",
+    });
     const provider: AiProvider = {
       name: "mock",
-      extractContractTerms: vi.fn().mockRejectedValue(new Error("Mock provider unavailable"))
+      extractContractTerms: vi
+        .fn()
+        .mockRejectedValue(new Error("Mock provider unavailable")),
     };
 
     mockedRepository.createExtractionRun.mockResolvedValue(createdRun);
-    mockedRepository.markExtractionRunExtracting.mockResolvedValue(extractingRun);
+    mockedRepository.markExtractionRunExtracting.mockResolvedValue(
+      extractingRun,
+    );
     mockedRepository.failExtractionRun.mockResolvedValue(failedRun);
 
     await expect(
-      createContractExtraction({ sourceType: "text", sourceText: createdRun.sourceText }, provider)
+      createContractExtraction(
+        { sourceType: "text", sourceText: createdRun.sourceText },
+        provider,
+      ),
     ).rejects.toThrow("Mock provider unavailable");
 
-    expect(mockedRepository.failExtractionRun).toHaveBeenCalledWith(createdRun.id, "Mock provider unavailable");
-    expect(mockedCreateAuditLog).toHaveBeenLastCalledWith(expect.objectContaining({
-      action: "ai_extraction.failed"
-    }));
+    expect(mockedRepository.failExtractionRun).toHaveBeenCalledWith(
+      createdRun.id,
+      "Mock provider unavailable",
+    );
+    expect(mockedCreateAuditLog).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "ai_extraction.failed",
+      }),
+    );
   });
 
   it("persists an approved human review and audit event", async () => {
@@ -212,7 +241,7 @@ describe("AI extraction service", () => {
       structuredOutput: reviewedOutput,
       reviewedOutput,
       reviewedBy: reviewInput.reviewer,
-      reviewedAt: "2026-06-21T01:00:00.000Z"
+      reviewedAt: "2026-06-21T01:00:00.000Z",
     });
     const review = {
       id: "22222222-2222-4222-8222-222222222222",
@@ -224,18 +253,23 @@ describe("AI extraction service", () => {
       notes: reviewInput.notes ?? null,
       completedAt: "2026-06-21T01:00:00.000Z",
       createdAt: "2026-06-21T01:00:00.000Z",
-      updatedAt: "2026-06-21T01:00:00.000Z"
+      updatedAt: "2026-06-21T01:00:00.000Z",
     };
 
-    mockedRepository.reviewExtractionRun.mockResolvedValue({ run: approvedRun, review });
+    mockedRepository.reviewExtractionRun.mockResolvedValue({
+      run: approvedRun,
+      review,
+    });
 
     const result = await reviewContractExtraction(approvedRun.id, reviewInput);
 
     expect(result.run.status).toBe("approved");
-    expect(mockedCreateAuditLog).toHaveBeenCalledWith(expect.objectContaining({
-      entityId: approvedRun.id,
-      action: "ai_extraction.approved"
-    }));
+    expect(mockedCreateAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: approvedRun.id,
+        action: "ai_extraction.approved",
+      }),
+    );
   });
 
   it("applies approved output by creating a customer and draft contract", async () => {
@@ -246,7 +280,7 @@ describe("AI extraction service", () => {
       email: "billing@acme.example",
       billingAddress: null,
       createdAt: "2026-06-21T02:00:00.000Z",
-      updatedAt: "2026-06-21T02:00:00.000Z"
+      updatedAt: "2026-06-21T02:00:00.000Z",
     };
     const contract = {
       id: "44444444-4444-4444-8444-444444444444",
@@ -264,14 +298,15 @@ describe("AI extraction service", () => {
         effectiveFrom: "2026-07-01",
         effectiveTo: "2027-06-30",
         termsSnapshot: {},
-        createdAt: "2026-06-21T02:00:00.000Z"
+        createdAt: "2026-06-21T02:00:00.000Z",
       },
-      lineItems: []
-    };    const appliedRun = extractionRun({
+      lineItems: [],
+    };
+    const appliedRun = extractionRun({
       status: "applied",
       reviewedOutput,
       appliedContractId: contract.id,
-      appliedAt: "2026-06-21T02:00:00.000Z"
+      appliedAt: "2026-06-21T02:00:00.000Z",
     });
 
     mockedRepository.getExtractionRunById.mockResolvedValue(approvedRun);
@@ -287,28 +322,104 @@ describe("AI extraction service", () => {
     expect(mockedContractsService.createContract).toHaveBeenCalledWith({
       customerId: customer.id,
       startDate: "2026-07-01",
-      endDate: "2027-06-30"
+      endDate: "2027-06-30",
     });
-    expect(mockedCreateAuditLog).toHaveBeenCalledWith(expect.objectContaining({
-      action: "ai_extraction.applied",
-      afterState: expect.objectContaining({
-        contractStatus: "draft",
-        lineItemsCreated: 0
-      })
-    }));
+    expect(mockedCreateAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "ai_extraction.applied",
+        afterState: expect.objectContaining({
+          contractStatus: "draft",
+          lineItemsCreated: 0,
+        }),
+      }),
+    );
+  });
+
+  it("applies previously approved Gemini output that used legacy field aliases", async () => {
+    const legacyOutput: AiExtractionOutput = {
+      ...reviewedOutput,
+      fields: reviewedOutput.fields.map((field) => {
+        const aliases: Record<string, string> = {
+          customer_email: "billing_email",
+          contract_start_date: "start_date",
+          contract_end_date: "end_date",
+        };
+        return { ...field, key: aliases[field.key] ?? field.key };
+      }),
+    };
+    const approvedRun = extractionRun({
+      status: "approved",
+      reviewedOutput: legacyOutput,
+    });
+    const customer = {
+      id: "33333333-3333-4333-8333-333333333333",
+      name: "Acme Corp",
+      email: "billing@acme.example",
+      billingAddress: null,
+      createdAt: "2026-06-21T02:00:00.000Z",
+      updatedAt: "2026-06-21T02:00:00.000Z",
+    };
+    const contract = {
+      id: "44444444-4444-4444-8444-444444444444",
+      customerId: customer.id,
+      status: "draft" as const,
+      startDate: "2026-07-01",
+      endDate: "2027-06-30",
+      createdAt: "2026-06-21T02:00:00.000Z",
+      updatedAt: "2026-06-21T02:00:00.000Z",
+      customerName: null,
+      currentVersion: {
+        id: "55555555-5555-4555-8555-555555555555",
+        contractId: "44444444-4444-4444-8444-444444444444",
+        versionNumber: 1,
+        effectiveFrom: "2026-07-01",
+        effectiveTo: "2027-06-30",
+        termsSnapshot: {},
+        createdAt: "2026-06-21T02:00:00.000Z",
+      },
+      lineItems: [],
+    };
+    const appliedRun = extractionRun({
+      status: "applied",
+      reviewedOutput: legacyOutput,
+      appliedContractId: contract.id,
+      appliedAt: "2026-06-21T02:00:00.000Z",
+    });
+
+    mockedRepository.getExtractionRunById.mockResolvedValue(approvedRun);
+    mockedCustomersService.findCustomerByEmail.mockResolvedValue(null);
+    mockedCustomersService.createCustomer.mockResolvedValue(customer);
+    mockedContractsService.createContract.mockResolvedValue(contract);
+    mockedRepository.markExtractionRunApplied.mockResolvedValue(appliedRun);
+
+    await applyReviewedExtraction(approvedRun.id);
+
+    expect(mockedCustomersService.createCustomer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "billing@acme.example",
+      }),
+    );
+    expect(mockedContractsService.createContract).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startDate: "2026-07-01",
+        endDate: "2027-06-30",
+      }),
+    );
   });
 
   it("does not apply an extraction that has not been approved", async () => {
-    mockedRepository.getExtractionRunById.mockResolvedValue(extractionRun({
-      status: "extracted",
-      structuredOutput: reviewedOutput
-    }));
+    mockedRepository.getExtractionRunById.mockResolvedValue(
+      extractionRun({
+        status: "extracted",
+        structuredOutput: reviewedOutput,
+      }),
+    );
 
     await expect(
-      applyReviewedExtraction("11111111-1111-4111-8111-111111111111")
+      applyReviewedExtraction("11111111-1111-4111-8111-111111111111"),
     ).rejects.toMatchObject({
       statusCode: 409,
-      code: "AI_EXTRACTION_NOT_APPROVED"
+      code: "AI_EXTRACTION_NOT_APPROVED",
     });
 
     expect(mockedContractsService.createContract).not.toHaveBeenCalled();

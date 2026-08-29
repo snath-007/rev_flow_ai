@@ -1,62 +1,53 @@
-import { listContracts, listCustomers, listPriceRules } from "@/lib/api-client";
+import { WorkspaceShell } from "../workspace-shell";
+import { getAuthenticationContext, listContracts, listCustomers, listPriceRules } from "@/lib/api-client";
+import { hasCapability } from "@/lib/access";
+import { NextAction, WorkflowGuide, WorkflowPageHeader } from "../workflow-components";
+import { PermissionNotice } from "../permission-notice";
 
-import { ContractApproveForm, ContractCreateForm, ContractLineItemForm } from "./contract-forms";
+import { ContractsWorkspace } from "./contracts-workspace";
 
 export default async function ContractsPage() {
-  const [customers, contracts, priceRules] = await Promise.all([
+  const [context, customers, contracts, priceRules] = await Promise.all([
+    getAuthenticationContext(),
     listCustomers(),
     listContracts(),
     listPriceRules()
   ]);
 
+  const canWriteContracts = context.status === "ready" && hasCapability(context.actor, "contracts.write");
+  const canApproveContracts = context.status === "ready" && hasCapability(context.actor, "contracts.approve");
+  const draftContracts = contracts.filter((contract) => contract.status === "draft");
+  const activeContracts = contracts.filter((contract) => contract.status === "active");
+  const approvableContracts = draftContracts.filter((contract) => contract.lineItemCount > 0);
+
   return (
-    <main className="shell page-grid">
-      <section className="hero compact">
-        <p className="eyebrow">Contracts</p>
-        <h1>Customer commercial terms</h1>
-        <p className="lede">Draft customer contracts, attach catalog price rules, and approve them into active billing configuration.</p>
-      </section>
+    <WorkspaceShell activePath="/contracts">
+      <main className="workspace-page page-grid">
+        <WorkflowPageHeader
+          breadcrumbs={[{ href: "/overview", label: "Overview" }, { label: "Contracts" }]}
+          eyebrow="Configure"
+          title="Customer commercial terms"
+          description="Draft contract terms, attach price rules, and approve eligible contracts into active billing configuration."
+          actions={<a className="primary-link secondary" href="/ai">Use AI intake</a>}
+        />
 
-      <section className="two-column">
-        <div className="stacked-forms">
-          <ContractCreateForm customers={customers} />
-          <ContractLineItemForm contracts={contracts} priceRules={priceRules} />
-          <ContractApproveForm contracts={contracts} />
-        </div>
+        <WorkflowGuide
+          title="Contract activation flow"
+          items={[
+            { href: "/customers", label: "Customer", detail: `${customers.length} available`, status: customers.length > 0 ? "done" : "blocked" },
+            { href: "/catalog", label: "Price rule", detail: `${priceRules.length} available`, status: priceRules.length > 0 ? "done" : "blocked" },
+            { label: "Draft", detail: `${draftContracts.length} draft contracts`, status: draftContracts.length > 0 ? "done" : customers.length > 0 && priceRules.length > 0 ? "active" : "blocked" },
+            { label: "Approve", detail: `${approvableContracts.length} ready for approval`, status: activeContracts.length > 0 ? "done" : approvableContracts.length > 0 ? "active" : "blocked" }
+          ]}
+        />
 
-        <div className="table-panel">
-          <div className="table-header">
-            <h2>Contracts</h2>
-            <span>{contracts.length} total</span>
-          </div>
-          {contracts.length === 0 ? (
-            <p className="empty-state">No contracts yet.</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Customer</th>
-                  <th>Status</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Lines</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contracts.map((contract) => (
-                  <tr key={contract.id}>
-                    <td>{contract.customerName ?? contract.customerId}</td>
-                    <td>{contract.status}</td>
-                    <td>{new Date(contract.startDate).toLocaleDateString()}</td>
-                    <td>{contract.endDate ? new Date(contract.endDate).toLocaleDateString() : "Open"}</td>
-                    <td>{contract.lineItemCount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
-    </main>
+        {!canWriteContracts ? <PermissionNotice capability="contracts.write" label="Contract drafting" /> : null}
+        {!canApproveContracts ? <PermissionNotice capability="contracts.approve" label="Contract approval" /> : null}
+
+        <ContractsWorkspace canApprove={canApproveContracts} canWrite={canWriteContracts} contracts={contracts} customers={customers} priceRules={priceRules} />
+
+        {activeContracts.length > 0 ? <NextAction href="/usage" title="Next: ingest usage">Use active contracts and meters to create billable usage aggregates.</NextAction> : null}
+      </main>
+    </WorkspaceShell>
   );
 }

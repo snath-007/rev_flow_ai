@@ -166,7 +166,7 @@ Phase 5 implements:
 
 - Pasted contract-text extraction into draft terms
 - Confidence, ambiguity, missing-field, and source-evidence visibility
-- Provider-neutral mock and local Ollama inference
+- Provider-neutral Gemini and deterministic mock inference
 
 Future candidates include invoice anomaly detection, natural-language finance Q&A, and drafting dunning or collections communications with human review.
 
@@ -504,7 +504,7 @@ The engine returns calculation snapshots that can be stored on invoice line item
 
 ## Current Implementation Status
 
-Phases 1 through 5 are implemented as a working product slice.
+Phases 1 through 5 and the core Phase 6 productization workflows are implemented as a working product slice. Live hosted deployment and production-oriented hardening remain in progress.
 
 Completed:
 
@@ -529,10 +529,15 @@ Completed:
 - Journal entry generation from revenue schedules
 - Revenue recognition API and `/revenue` UI
 - Persisted AI extraction runs with provider, model, prompt, confidence, ambiguity, and error metadata
-- Provider-neutral AI boundary with deterministic mock and opt-in local Ollama adapters
+- Provider-neutral AI boundary with direct Gemini and deterministic mock adapters
 - `/ai` contract extraction and field-level human review workspace
 - Approved extraction application to matched/created customers and draft contracts only
 - Audit visibility for AI extraction creation, review, failure, and apply actions
+- Clerk authentication with workspace membership and API-enforced RBAC
+- Tenant-scoped data access and cross-workspace authorization tests
+- Payment receipt, reconciliation, AR, DSO, MRR, ARR, and revenue reporting
+- Permission-controlled integration exports with auditable run records
+- Neon runtime/migration connection separation and two-project Vercel deployment configuration
 
 Known remaining shortcuts:
 
@@ -544,9 +549,9 @@ Known remaining shortcuts:
 - Usage-priced invoice lines currently default to immediate recognition; full usage-based recognition remains a later hardening path.
 - AI intake is paste-based text; PDF upload, OCR, and multi-document reconciliation are deferred.
 - Applying reviewed AI output creates a draft contract without trusted catalog or price-rule links.
-- Local small-model confidence may be optimistic, so explicit field decisions and contract approval remain mandatory.
+- Model confidence is advisory, so explicit field decisions and contract approval remain mandatory.
 
-These shortcuts are acceptable for the current POC and become inputs to Phase 6 and the production-hardening notes.
+These shortcuts are acceptable for the current POC and remain inputs to hosted deployment and production-hardening work.
 
 ## Implementation Plan
 
@@ -628,7 +633,7 @@ Implemented:
 - Persisted extraction runs and review history
 - Provider-neutral `AiProvider` contract
 - Deterministic mock provider for repeatable tests and demos
-- Opt-in local Ollama provider with schema-constrained output
+- Direct Gemini API provider with schema-constrained output
 - Confidence, ambiguity, missing-field, and source-snippet visibility
 - Field-level accept, edit, and reject decisions
 - Human approval or rejection of the extraction
@@ -648,19 +653,23 @@ Detailed checklist: [docs/phase-5-execution-checklist.md](./docs/phase-5-executi
 
 ### Phase 6 - Productization, Reporting, And Deployment
 
-Status: planned.
+Status: in progress. Core product workflows are complete; live Vercel deployment and hardening remain.
 
 Goal: turn the functional POC into a coherent, access-controlled, deployable product demonstration.
 
-- Standardize navigation, visual language, responsive behavior, and end-to-end UX
-- Add authentication, customer/tenant onboarding, and role-based access control
-- Introduce tenant-aware ownership boundaries before exposing the application online
-- Add MRR, ARR, NRR, revenue waterfall, AR, and DSO reporting
-- Simulate payment receipt and reconciliation
-- Add ERP/CRM export stubs and integration boundaries
-- Define hosted deployment for web, API, worker, Postgres, Redis, and AI-provider configuration
-- Add production architecture, security, observability, backup, and scaling notes
-- Refresh screenshots, demo data, and portfolio walkthrough
+- [x] Standardize navigation, visual language, responsive behavior, and end-to-end UX
+- [x] Establish a RevFlow design system across public and authenticated surfaces
+- [x] Add authentication, workspace onboarding, tenant ownership, and API-enforced RBAC
+- [x] Add deterministic revenue, AR, DSO, MRR, and ARR reporting
+- [x] Add payment receipt, reconciliation, and auditable integration exports
+- [x] Configure Neon and prepare separate Vercel web/API deployments
+- [ ] Create and verify the live Vercel projects and hosted Clerk URLs
+- [ ] Complete production-oriented rate limiting, observability, backup, and scaling notes
+- [ ] Refresh hosted-demo screenshots and release evidence
+
+Detailed checklist: [docs/phase-6-execution-checklist.md](./docs/phase-6-execution-checklist.md)
+
+Hosted demo setup: [docs/deployment-free-tier.md](./docs/deployment-free-tier.md)
 
 ## Local Development
 
@@ -673,7 +682,7 @@ npm run db:seed
 npm run dev
 ```
 
-The default `AI_PROVIDER=mock` requires no model download or external credentials. For local model inference, install Ollama, run `ollama pull qwen2.5:3b`, set `AI_PROVIDER=ollama`, and restart the API. See [docs/local-development.md](./docs/local-development.md) for provider details.
+The default `AI_PROVIDER=gemini` uses a server-side `GEMINI_API_KEY` and schema-constrained output. Set `AI_PROVIDER=mock` for deterministic offline tests or demos. See [docs/local-development.md](./docs/local-development.md) for provider details.
 
 Services:
 
@@ -740,20 +749,20 @@ npm run typecheck -w @revflow/db
 
 ## Key Design Decisions
 
-| Area | Decision |
-| --- | --- |
-| Product framing | AI-assisted order-to-cash automation POC |
-| Monorepo | Turborepo-style apps and packages |
-| Frontend | Next.js, Tailwind CSS, shadcn/ui, lucide-react |
-| Backend | Express, TypeScript, Zod |
-| Database | PostgreSQL with explicit SQL |
-| Queue | Redis + BullMQ |
-| Workers | Node.js background consumers |
-| Shared contracts | TypeScript types and Zod schemas |
-| Pricing | Deterministic strategy engine, no AI math |
-| AI | Provider-neutral draft extraction with mandatory human review; no financial math |
-| Financial workflow | Explicit states, snapshots, and audit logs |
-| Repo strategy | Keep monorepo for POC; document production decomposition path |
+| Area               | Decision                                                                         |
+| ------------------ | -------------------------------------------------------------------------------- |
+| Product framing    | AI-assisted order-to-cash automation POC                                         |
+| Monorepo           | Turborepo-style apps and packages                                                |
+| Frontend           | Next.js, Tailwind CSS, shadcn/ui, lucide-react                                   |
+| Backend            | Express, TypeScript, Zod                                                         |
+| Database           | PostgreSQL with explicit SQL                                                     |
+| Queue              | Redis + BullMQ                                                                   |
+| Workers            | Node.js background consumers                                                     |
+| Shared contracts   | TypeScript types and Zod schemas                                                 |
+| Pricing            | Deterministic strategy engine, no AI math                                        |
+| AI                 | Provider-neutral draft extraction with mandatory human review; no financial math |
+| Financial workflow | Explicit states, snapshots, and audit logs                                       |
+| Repo strategy      | Keep monorepo for POC; document production decomposition path                    |
 
 ## Future Enhancements
 
@@ -779,6 +788,6 @@ npm run typecheck -w @revflow/db
 - Phase 3 plan: [docs/phase-3-plan.md](./docs/phase-3-plan.md)
 - Phase 4 checklist: [docs/phase-4-execution-checklist.md](./docs/phase-4-execution-checklist.md)
 - Phase 5 checklist: [docs/phase-5-execution-checklist.md](./docs/phase-5-execution-checklist.md)
+- Phase 6 checklist: [docs/phase-6-execution-checklist.md](./docs/phase-6-execution-checklist.md)
 - AI extraction module: [docs/modules/ai-extraction.md](./docs/modules/ai-extraction.md)
 - Production way forward: [docs/production-way-forward.md](./docs/production-way-forward.md)
-
